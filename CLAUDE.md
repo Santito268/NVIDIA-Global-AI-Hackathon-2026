@@ -9,7 +9,7 @@ Este archivo le da a Claude Code el contexto y las reglas de este proyecto. Lée
 - **Qué es:** una aplicación de IA para el **Nebius x NVIDIA Global AI Hackathon 2026** (Devpost: https://nebiusglobalaihackathon.devpost.com).
 - **Autor:** desarrollador junior en Bogotá, Colombia. El proyecto también será la pieza principal de su portafolio de GitHub para entrevistas técnicas.
 - **Categoría (track):** `Best Apps and Agents` *(cámbiala si se elige otra)*.
-- **Idea del proyecto:** `[COMPLETAR: una o dos frases sobre qué problema resuelve y para quién]`
+- **Idea del proyecto:** un asistente que convierte el problema de salud de un ciudadano colombiano con su EPS (medicamento negado, cita sin asignar, autorización demorada) en un **derecho de petición o una tutela** lista para radicar, con base legal buscada en la web y explicada en lenguaje simple. Diseño completo: `docs/superpowers/specs/2026-10-25-eps-peticion-design.md`.
 
 ### Fecha límite (no negociable)
 - **Entrega final:** viernes **30 de octubre de 2026, 10:00 a.m. hora del Pacífico = 12:00 m. hora de Bogotá**.
