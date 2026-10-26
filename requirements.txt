@@ -1,0 +1,9 @@
+openai==3.37.0
+streamlit==1.66.1
+pydantic==2.14.1
+tavily-python==0.8.5
+python-dotenv==1.2.4
+
+# Dev
+pytest==9.1.1
+ruff==0.17.2
