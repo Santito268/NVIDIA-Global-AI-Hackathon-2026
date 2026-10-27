@@ -34,9 +34,15 @@ def remove_unverified_urls(text: str, sources: list[Source]) -> tuple[str, list[
     return URL_PATTERN.sub(check, text), cited
 
 
+# Tavily drops accented letters from most Court snippets ("prestación" arrives as "prestacin":
+# 79 of 86 cached ruling snippets). A correct quote would never match, so both sides drop them.
+_DROP_ACCENTED = str.maketrans("", "", "áéíóúüñ")
+
+
 def _normalize(text: str) -> str:
-    """Compare quotes ignoring case, extra spaces and edge punctuation or ellipses."""
-    return " ".join(text.split()).casefold().strip(" .,;:…")
+    """Compare quotes ignoring case, accented letters, extra spaces and edge punctuation."""
+    text = text.casefold().translate(_DROP_ACCENTED)
+    return " ".join(text.split()).strip(" .,;:…")
 
 
 def remove_unverified_quotes(text: str, sources: list[Source]) -> str:

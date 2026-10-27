@@ -154,6 +154,9 @@ Rules for legal grounds (very important):
   fragment and may come from the facts of that case, not from its decision.
 - Any text between « » must be copied word for word from a snippet or from the "Texto
   oficial" of the LEGAL CODE. Quotes that are not exact will be removed.
+- Snippets often lost their accented letters ("prestacin" for "prestación", "NIOS" for
+  "NIÑOS"). When you quote them, write those words with their correct accents and change
+  nothing else.
 - Never invent rulings, article numbers, quotes or URLs.
 - In an urgent case, ask the judge for a medida provisional (artículo 7 del Decreto 2591 de
   1991) in the Pretensiones.

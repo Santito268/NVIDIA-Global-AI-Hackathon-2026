@@ -268,6 +268,16 @@ def test_short_quotes_or_quotes_with_gaps_are_removed(quote):
     assert verify.remove_unverified_quotes(quote, [source]) == verify.REMOVED_QUOTE_NOTE
 
 
+def test_quotes_match_snippets_that_lost_their_accented_letters():
+    # Real shape of a Tavily snippet from a Court ruling: accented letters are dropped.
+    snippet = "ACCIN DE TUTELA-Hecho superado por prestacin del servicio de salud a los NIOS"
+    source = Source(title="T", url="https://x.gov.co", snippet=snippet)
+    right = "«acción de tutela-hecho superado por prestación del servicio de salud a los niños»"
+    assert verify.remove_unverified_quotes(right, [source]) == right
+    wrong = "«acción de tutela-hecho superado por negación del servicio de salud»"
+    assert verify.remove_unverified_quotes(wrong, [source]) == verify.REMOVED_QUOTE_NOTE
+
+
 def test_mock_draft_drops_the_invented_quote():
     body = agent.run_case("La EPS no me entrega un medicamento.").draft.body_markdown
     assert "«la EPS no puede negar un medicamento formulado»" in body
