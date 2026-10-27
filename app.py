@@ -1,5 +1,7 @@
 """Streamlit interface: describe a problem with your EPS, get a ready-to-file document."""
 
+import threading
+from datetime import date
 from pathlib import Path
 
 import streamlit as st
@@ -40,6 +42,27 @@ def init_state() -> None:
     st.session_state.setdefault("translation_metrics", [])
 
 
+@st.cache_resource
+def daily_usage() -> dict:
+    """One counter shared by every visitor of this server (session limits reset on reload)."""
+    return {"day": None, "cases": 0, "lock": threading.Lock()}
+
+
+def daily_cases_left() -> int:
+    """Cases the whole app can still run today; the count restarts every day."""
+    usage = daily_usage()
+    with usage["lock"]:
+        if usage["day"] != date.today():
+            usage["day"], usage["cases"] = date.today(), 0
+        return config.MAX_CASES_PER_DAY - usage["cases"]
+
+
+def count_daily_case() -> None:
+    usage = daily_usage()
+    with usage["lock"]:
+        usage["cases"] += 1
+
+
 def load_sample() -> None:
     st.session_state.description = SAMPLE_PATH.read_text(encoding="utf-8")
 
@@ -47,6 +70,7 @@ def load_sample() -> None:
 def generate(description: str) -> None:
     """Run the pipeline once, showing progress, and keep the result in the session."""
     st.session_state.cases_run += 1  # count before calling: a failed case also spends credits
+    count_daily_case()
     with st.status(t("status_running"), expanded=True) as status:
         try:
             result = run_case(description, on_step=lambda step: st.write(t(f"step_{step}")))
@@ -209,11 +233,16 @@ def main() -> None:
     left = limit - st.session_state.cases_run
     if left <= 0:
         st.warning(t("limit_reached", limit=limit))
+    elif daily_cases_left() <= 0:
+        st.warning(t("daily_limit_reached"))
     else:
         st.caption(t("cases_left", left=left, limit=limit))
-    if st.button(t("generate_button"), key="generate", type="primary", disabled=left <= 0):
+    blocked = left <= 0 or daily_cases_left() <= 0
+    if st.button(t("generate_button"), key="generate", type="primary", disabled=blocked):
         description = st.session_state.description.strip()
-        if description:
+        if daily_cases_left() <= 0:  # another visitor may have used the last case meanwhile
+            st.warning(t("daily_limit_reached"))
+        elif description:
             generate(description)
         else:
             st.error(t("empty_input"))

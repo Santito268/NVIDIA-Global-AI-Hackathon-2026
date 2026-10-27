@@ -35,6 +35,9 @@ UI_TEXT: dict[str, dict[str, str]] = {
             "Llegaste al límite de {limit} casos de esta demostración. Gracias por probarla."
         ),
         "cases_left": "Casos disponibles en esta sesión: {left} de {limit}.",
+        "daily_limit_reached": (
+            "La demostración llegó a su límite de casos por hoy. Vuelve mañana, por favor."
+        ),
         "status_running": "Preparando tu documento…",
         "status_done": "¡Listo! Tu documento está abajo.",
         "status_error": "No se pudo terminar el documento.",
@@ -98,6 +101,9 @@ UI_TEXT: dict[str, dict[str, str]] = {
             "You reached the limit of {limit} cases for this demo. Thanks for trying it."
         ),
         "cases_left": "Cases left in this session: {left} of {limit}.",
+        "daily_limit_reached": (
+            "The demo reached its case limit for today. Please come back tomorrow."
+        ),
         "status_running": "Preparing your document…",
         "status_done": "Done! Your document is below.",
         "status_error": "The document could not be finished.",

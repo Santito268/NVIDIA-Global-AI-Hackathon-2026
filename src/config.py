@@ -41,6 +41,9 @@ LANGUAGES: dict[str, str] = {"es": "Español", "en": "English"}
 
 # Each case costs ~13k tokens and 3 Tavily searches: protects the public demo's credits.
 MAX_CASES_PER_SESSION: int = 3
+# Shared by all visitors: reloading the page resets the session limit, not this one.
+# ~50 cases/day is ~650k tokens and ~150 Tavily searches at most (the free plan has 1,000/month).
+MAX_CASES_PER_DAY: int = 50
 MAX_SEARCHES_PER_CASE: int = 3
 RESULTS_PER_SEARCH: int = 3
 MAX_SNIPPET_CHARS: int = 500

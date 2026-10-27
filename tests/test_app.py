@@ -66,6 +66,13 @@ def test_generate_is_disabled_after_the_session_limit():
     assert str(config.MAX_CASES_PER_SESSION) in at.warning[-1].value
 
 
+def test_generate_is_disabled_when_the_daily_limit_is_reached(monkeypatch):
+    monkeypatch.setattr(config, "MAX_CASES_PER_DAY", 0)
+    at = _app()
+    assert at.button(key="generate").disabled
+    assert TEXT["daily_limit_reached"] in [w.value for w in at.warning]
+
+
 def test_pipeline_error_is_shown_without_crashing(monkeypatch):
     def failing_run_case(*args, **kwargs):
         raise LLMError("The AI service took too long to answer.")
