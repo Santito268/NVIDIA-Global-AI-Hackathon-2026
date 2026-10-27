@@ -140,7 +140,7 @@ def test_english_headings_and_next_steps_come_from_code_not_from_the_model():
     at.button(key="generate").click().run()
     at.segmented_control(key="language").set_value("en").run()
     text = _all_text(at)
-    assert f"**{UI_TEXT['en']['document_type']}: {DOCUMENT_NAMES['en']['tutela']}.**" in text
+    assert f"<b>{UI_TEXT['en']['document_type']}: {DOCUMENT_NAMES['en']['tutela']}.</b>" in text
     assert agent.NEXT_STEPS["en"]["tutela"][3] in text
     assert "A tutela is the right document because" in text  # hand-written reason
     assert "## Parties" in text and "# ACCIÓN DE TUTELA (constitutional" in text

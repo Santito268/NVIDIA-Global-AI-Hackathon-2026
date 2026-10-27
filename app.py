@@ -1,12 +1,13 @@
 """Streamlit interface: describe a problem with your EPS, get a ready-to-file document."""
 
+import json
 import threading
 from datetime import date
 from pathlib import Path
 
 import streamlit as st
 
-from src import config
+from src import config, legal, ui_style
 from src.agent import (
     NEXT_STEPS,
     CaseResult,
@@ -21,7 +22,21 @@ from src.schemas import ExplanationText
 from src.tools import SearchError
 from src.ui_text import DOCUMENT_NAMES, UI_TEXT
 
-SAMPLE_PATH = Path(__file__).resolve().parent / "data" / "samples" / "caso_01.txt"
+ROOT = Path(__file__).resolve().parent
+SAMPLES = {
+    "sample": ROOT / "data" / "samples" / "caso_01.txt",
+    "sample_2": ROOT / "data" / "samples" / "caso_02.txt",
+    "sample_3": ROOT / "data" / "samples" / "caso_03.txt",
+}
+EVAL_RESULTS = ROOT / "evals" / "results.json"
+REPO_URL = "https://github.com/Santito268/NVIDIA-Global-AI-Hackathon-2026"
+# Pipeline steps shown while a case runs, with the model that does each one.
+STEPS = [
+    ("intake", "Nemotron Nano"),
+    ("research", "Nemotron Super + Tavily"),
+    ("draft", "Nemotron Super"),
+    ("explain", "Nemotron Nano"),
+]
 
 
 def language() -> str:
@@ -65,44 +80,46 @@ def count_daily_case() -> None:
         usage["cases"] += 1
 
 
-def load_sample() -> None:
-    st.session_state.description = SAMPLE_PATH.read_text(encoding="utf-8")
+@st.cache_data
+def eval_score() -> str:
+    """'passed/total' from the last evaluation run, shown in the hero."""
+    try:
+        grades = json.loads(EVAL_RESULTS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "—"
+    return f"{sum(g.get('passed', False) for g in grades)}/{len(grades)}"
 
 
-def generate(description: str) -> None:
-    """Run the pipeline once, showing progress, and keep the result in the session."""
+def load_sample(key: str) -> None:
+    st.session_state.description = SAMPLES[key].read_text(encoding="utf-8").strip()
+
+
+def show_stepper(placeholder, current: int) -> None:
+    steps = [(t(f"step_{name}"), model) for name, model in STEPS]
+    html = ui_style.stepper(t("status_running"), steps, current, t("wait_notice"))
+    placeholder.markdown(html, unsafe_allow_html=True)
+
+
+def generate(description: str) -> bool:
+    """Run the pipeline once, showing progress; keep the result in the session."""
     st.session_state.cases_run += 1  # count before calling: a failed case also spends credits
     count_daily_case()
-    with st.status(t("status_running"), expanded=True) as status:
-        try:
-            result = run_case(description, on_step=lambda step: st.write(t(f"step_{step}")))
-        except (LLMError, SearchError) as error:
-            status.update(label=t("status_error"), state="error")
-            st.error(t("error_message"))
-            st.caption(t(f"error_{error.code}"))
-            return
-        status.update(label=t("status_done"), state="complete", expanded=False)
+    placeholder = st.empty()
+    order = [name for name, _ in STEPS]
+    show_stepper(placeholder, 0)
+    try:
+        result = run_case(
+            description, on_step=lambda step: show_stepper(placeholder, order.index(step))
+        )
+    except (LLMError, SearchError) as error:
+        placeholder.empty()
+        st.error(t("error_message"))
+        st.caption(t(f"error_{error.code}"))
+        return False
+    show_stepper(placeholder, len(STEPS))
     st.session_state.result = result
     st.session_state.translations = {}  # translations belong to the previous case
-
-
-def explanation_markdown(result: CaseResult, lang: str, text: ExplanationText) -> str:
-    """The explanation tab. Everything is hand-written per language except `text` (summary
-    and key points), the only part Nano translates."""
-    document_type = result.route.document_type
-    name = DOCUMENT_NAMES[lang][document_type]
-    reason = route_reason(result.facts, document_type, lang)
-    key_points = "\n".join(f"- {point}" for point in text.key_points)
-    to_fill = " ".join(f"`{localize_placeholders(p, lang)}`" for p in result.to_fill)
-    steps = NEXT_STEPS[lang][document_type]
-    next_steps = "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
-    return (
-        f"**{t('document_type', lang)}: {name}.** {reason}\n\n"
-        f"### {t('summary', lang)}\n{text.summary}\n\n"
-        f"### {t('key_points', lang)}\n{key_points}\n\n"
-        f"### {t('to_fill', lang)}\n{to_fill}\n\n"
-        f"### {t('next_steps', lang)}\n{next_steps}"
-    )
+    return True
 
 
 def translate(result: CaseResult, spanish: ExplanationText, lang: str) -> dict | None:
@@ -119,11 +136,10 @@ def translate(result: CaseResult, spanish: ExplanationText, lang: str) -> dict |
     return {"explanation": explanation, "sections": sections}
 
 
-def localized(result: CaseResult) -> dict[str, str]:
-    """Explanation and document in the chosen language; translated once and then cached."""
+def localized(result: CaseResult) -> tuple[str, ExplanationText, str]:
+    """(language shown, explanation texts, document); translated once and then cached."""
     spanish = ExplanationText(
-        summary=result.explanation.summary,
-        key_points=result.explanation.key_points,
+        summary=result.explanation.summary, key_points=result.explanation.key_points
     )
     lang = language()
     if lang != config.SOURCE_LANGUAGE:
@@ -136,50 +152,69 @@ def localized(result: CaseResult) -> dict[str, str]:
             document = build_document(
                 result.route.document_type, result.facts, translated["sections"], lang
             )
-            return {
-                "explanation": explanation_markdown(result, lang, translated["explanation"]),
-                "document": localize_placeholders(document, lang),
-            }
+            return lang, translated["explanation"], localize_placeholders(document, lang)
         st.warning(t("translation_error"))
-    es = config.SOURCE_LANGUAGE
-    return {
-        "explanation": explanation_markdown(result, es, spanish),
-        "document": result.draft.body_markdown,
-    }
+    return config.SOURCE_LANGUAGE, spanish, result.draft.body_markdown
 
 
-def show_explanation(result: CaseResult, texts: dict[str, str]) -> None:
-    st.markdown(texts["explanation"])
+def show_explanation(result: CaseResult, lang: str, text: ExplanationText) -> None:
+    """Everything here is hand-written per language except the summary and key points."""
+    document_type = result.route.document_type
+    labels = {key: t(key, lang) for key in ("document_type", "summary", "key_points")}
+    labels |= {key: t(key, lang) for key in ("to_fill", "next_steps")}
+    html = ui_style.explanation(
+        labels,
+        DOCUMENT_NAMES[lang][document_type],
+        route_reason(result.facts, document_type, lang),
+        text.summary,
+        text.key_points,
+        [localize_placeholders(p, lang) for p in result.to_fill],
+        NEXT_STEPS[lang][document_type],
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 
-def show_document(result: CaseResult, texts: dict[str, str]) -> None:
+def show_document(result: CaseResult, document: str) -> None:
     # The download is always the Spanish original: it is the version to file.
     st.download_button(
         t("download"),
         data=result.draft.body_markdown,
         file_name=f"{result.route.document_type}.md",
         mime="text/markdown",
+        icon=":material/download:",
     )
     if st.session_state.translations.get(language()):  # only when a translation is shown
         st.info(t("translation_notice"))
-    with st.container(border=True):
-        st.markdown(texts["document"])
+    with st.container(key="paper"):
+        st.markdown(document)
 
 
-def show_sources(result: CaseResult, texts: dict[str, str]) -> None:
+def show_sources(result: CaseResult) -> None:
     if not result.sources:
         st.write(t("no_sources"))
         return
     st.caption(t("sources_intro"))
     for source in result.sources:
-        cited = f" — ✅ {t('cited')}" if source.url in result.draft.cited_urls else ""
-        st.markdown(f"**{source.title}**{cited}  \n{source.url}")
-        st.caption(source.snippet)
+        cited = t("cited") if source.url in result.draft.cited_urls else None
+        card = ui_style.source_card(source.title, source.url, source.snippet, cited)
+        st.markdown(card, unsafe_allow_html=True)
 
 
-def show_metrics(result: CaseResult, texts: dict[str, str]) -> None:
-    st.caption(t("metrics_intro"))
+def show_metrics(result: CaseResult) -> None:
     metrics = result.metrics + st.session_state.translation_metrics
+    tokens = sum(m.prompt_tokens + m.completion_tokens for m in metrics)
+    seconds = sum(m.latency_s for m in metrics)
+    for column, (label, value) in zip(
+        st.columns(3),
+        [
+            (t("metric_tokens"), f"{tokens:,}"),
+            (t("metric_time"), f"{seconds:.1f} s"),
+            (t("metric_calls"), str(len(metrics))),
+        ],
+        strict=True,
+    ):
+        column.metric(label, value)
+    st.caption(t("metrics_intro"))
     rows = [
         {
             t("col_step"): m.step,
@@ -190,71 +225,115 @@ def show_metrics(result: CaseResult, texts: dict[str, str]) -> None:
         }
         for m in metrics
     ]
-    st.dataframe(rows, hide_index=True)
-    tokens = sum(m.prompt_tokens + m.completion_tokens for m in metrics)
-    st.write(t("total", tokens=tokens, seconds=sum(m.latency_s for m in metrics)))
+    st.dataframe(rows, hide_index=True, use_container_width=True)
+    st.caption(t("total", tokens=tokens, seconds=seconds))
 
 
 def show_result(result: CaseResult) -> None:
-    texts = localized(result)
-    tabs = st.tabs([t("tab_explanation"), t("tab_document"), t("tab_sources"), t("tab_metrics")])
-    for tab, show in zip(
-        tabs, [show_explanation, show_document, show_sources, show_metrics], strict=True
-    ):
-        with tab:
-            show(result, texts)
-
-
-def main() -> None:
-    init_state()
-    st.set_page_config(page_title=t("title"), page_icon="⚖️")
-
-    st.segmented_control(
-        "Idioma / Language",
-        options=list(config.LANGUAGES),
-        format_func=config.LANGUAGES.get,
-        default=config.SOURCE_LANGUAGE,
-        key="language",
-        label_visibility="collapsed",
+    lang, text, document = localized(result)
+    document_type = result.route.document_type
+    head = ui_style.result_head(
+        t("result_title"), document_type, DOCUMENT_NAMES[language()][document_type]
     )
-    st.title(t("title"))
-    st.write(t("tagline"))
-    st.warning(t("legal_notice"))
-    st.info(t("privacy_notice"))
+    st.markdown(head, unsafe_allow_html=True)
+    explanation_tab, document_tab, sources_tab, metrics_tab = st.tabs(
+        [t("tab_explanation"), t("tab_document"), t("tab_sources"), t("tab_metrics")]
+    )
+    with explanation_tab:
+        show_explanation(result, lang, text)
+    with document_tab:
+        show_document(result, document)
+    with sources_tab:
+        show_sources(result)
+    with metrics_tab:
+        show_metrics(result)
+
+
+def show_header() -> None:
+    brand, switch = st.columns([3, 1], vertical_alignment="center")
+    brand.markdown('<div class="sv-brand">⚖️ Sub<span>venio</span></div>', unsafe_allow_html=True)
+    with switch.container(key="lang"):
+        st.segmented_control(
+            "Idioma / Language",
+            options=list(config.LANGUAGES),
+            format_func=config.LANGUAGES.get,
+            default=config.SOURCE_LANGUAGE,
+            key="language",
+            label_visibility="collapsed",
+        )
+    stats = [
+        (eval_score(), t("stat_eval")),
+        (str(len(legal.load_corpus()["articles"])), t("stat_laws")),
+        ("~30", t("stat_time")),
+    ]
+    st.markdown(
+        ui_style.hero(t("title"), t("tagline"), t("hero_badge"), stats), unsafe_allow_html=True
+    )
+    steps = [("✍️", "how_1"), ("⚖️", "how_2"), ("📄", "how_3")]
+    cards = [(icon, t(f"{key}_title"), t(f"{key}_text")) for icon, key in steps]
+    st.markdown(ui_style.how_it_works(t("how_title"), cards), unsafe_allow_html=True)
+    notes = [
+        ("⚖️", t("legal_title"), t("legal_text")),
+        ("🔒", t("privacy_title"), t("privacy_text")),
+    ]
+    st.markdown(ui_style.notes(notes), unsafe_allow_html=True)
+
+
+def show_case_form() -> None:
+    st.markdown(f'<div class="sv-section">{t("case_title")}</div>', unsafe_allow_html=True)
     if config.LLM_MODE == "mock":
         st.caption(t("mock_notice"))
-
-    st.button(t("sample_button"), key="sample", on_click=load_sample)
+    st.caption(t("samples_label"))
+    for column, key in zip(st.columns(3), SAMPLES, strict=True):
+        column.button(
+            t("sample_1" if key == "sample" else key),
+            key=key,
+            on_click=load_sample,
+            args=(key,),
+            use_container_width=True,
+        )
     if t("input_language_note"):
         st.caption(t("input_language_note"))
     st.text_area(
         t("input_label"),
         key="description",
         max_chars=config.MAX_INPUT_CHARS,
-        height=180,
+        height=170,
         placeholder=t("input_placeholder"),
     )
 
     limit = config.MAX_CASES_PER_SESSION
     left = limit - st.session_state.cases_run
-    if left <= 0:
-        st.warning(t("limit_reached", limit=limit))
-    elif daily_cases_left() <= 0:
-        st.warning(t("daily_limit_reached"))
-    else:
-        st.caption(t("cases_left", left=left, limit=limit))
     blocked = left <= 0 or daily_cases_left() <= 0
-    if st.button(t("generate_button"), key="generate", type="primary", disabled=blocked):
+    button, info = st.columns([2, 5], vertical_alignment="center")
+    clicked = button.button(t("generate_button"), key="generate", type="primary", disabled=blocked)
+    with info:
+        if left <= 0:
+            st.warning(t("limit_reached", limit=limit))
+        elif daily_cases_left() <= 0:
+            st.warning(t("daily_limit_reached"))
+        else:
+            st.caption(t("cases_left", left=left, limit=limit))
+    if clicked:
         description = st.session_state.description.strip()
         if daily_cases_left() <= 0:  # another visitor may have used the last case meanwhile
             st.warning(t("daily_limit_reached"))
-        elif description:
-            generate(description)
-        else:
+        elif not description:
             st.error(t("empty_input"))
+        elif generate(description):
+            st.toast(t("status_done"), icon="✅")
+            st.rerun()  # redraw so the case counter and the results update together
 
+
+def main() -> None:
+    init_state()
+    st.set_page_config(page_title=t("title"), page_icon="⚖️", layout="centered")
+    st.markdown(ui_style.CSS, unsafe_allow_html=True)
+    show_header()
+    show_case_form()
     if st.session_state.result:
         show_result(st.session_state.result)
+    st.markdown(ui_style.footer(t("footer"), t("footer_code"), REPO_URL), unsafe_allow_html=True)
 
 
 main()
