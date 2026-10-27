@@ -9,6 +9,10 @@ Rules:
 - Never copy personal identifiers (full names, ID numbers, addresses, phone numbers).
 - List in "missing_info" the facts a lawyer would still need (e.g. date of the request,
   whether there is a medical order).
+- Set "special_protection" to true if the affected person is a subject of special
+  constitutional protection in Colombia: a child or adolescent (under 18), an older adult
+  (60 or older), a person with a disability, a pregnant woman, or a person with a serious or
+  catastrophic illness. Explain which one in "special_protection_reason".
 
 Answer ONLY with a JSON object with these keys:
 eps (string or null), problem_type (one of: medicine_denied, appointment_not_scheduled,
