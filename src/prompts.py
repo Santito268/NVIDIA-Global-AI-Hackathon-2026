@@ -9,6 +9,11 @@ Rules:
 - Never copy personal identifiers (full names, ID numbers, addresses, phone numbers).
 - List in "missing_info" the facts a lawyer would still need (e.g. date of the request,
   whether there is a medical order).
+- Set "urgent_health_risk" to true only if the delay can seriously harm the person's health
+  or life soon (e.g. a vital medicine, chemotherapy, dialysis, a child who cannot breathe
+  well). Mild or routine problems (acne, check-ups, a mild allergy, insoles) are not urgent.
+  The app uses this field and "special_protection" to choose between a tutela and a
+  derecho de petición.
 - Set "special_protection" to true if the affected person is a subject of special
   constitutional protection in Colombia: a child or adolescent (under 18), an older adult
   (60 or older), a person with a disability, a pregnant woman, or a person with a serious or
@@ -25,15 +30,6 @@ relevant_dates (list of strings), urgent_health_risk (boolean), special_protecti
 special_protection_reason (string or null), writer_is_affected_person (boolean),
 writer_relationship (string or null), missing_info (list of strings)."""
 
-ROUTE_SYSTEM = """You decide which legal document a Colombian citizen should file against their EPS.
-
-- "tutela": when the delay or denial puts a fundamental right (health, life, dignity) at
-  imminent risk, or the person is a subject of special constitutional protection.
-- "derecho_de_peticion": when there is no imminent risk and the person first needs a formal
-  answer from the EPS.
-
-Explain the reason in one or two simple sentences in Spanish.
-Answer ONLY with a JSON object with keys: document_type, reason."""
 
 RESEARCH_SYSTEM = """You prepare the legal research for a Colombian citizen's document against
 their EPS. You receive the facts of the case and the chosen document type.

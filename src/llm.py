@@ -52,6 +52,7 @@ def chat(
     step: str,
     thinking: bool = False,
     max_tokens: int = config.DEFAULT_MAX_TOKENS,
+    temperature: float = config.TEMPERATURE,
 ) -> tuple[str, CallMetrics]:
     """Send a chat request and return the answer text and its metrics.
 
@@ -75,7 +76,7 @@ def chat(
             model=model,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=0.2,
+            temperature=temperature,
             extra_body={"chat_template_kwargs": {"enable_thinking": thinking}},
         )
     except openai.APITimeoutError as exc:

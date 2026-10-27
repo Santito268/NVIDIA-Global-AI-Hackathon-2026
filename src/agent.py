@@ -1,4 +1,4 @@
-"""The pipeline: intake -> route -> research -> draft -> explain."""
+"""The pipeline: intake -> route (code) -> research -> draft -> explain."""
 
 import json
 import re
@@ -119,13 +119,30 @@ def run_intake(description: str) -> tuple[CaseFacts, list[CallMetrics]]:
     return chat_json(messages, config.NANO_MODEL, "intake", CaseFacts, thinking=False)
 
 
-def run_route(facts: CaseFacts) -> tuple[RouteDecision, list[CallMetrics]]:
-    """Step 2 (Nano): decide between derecho de petición and tutela."""
-    messages = [
-        {"role": "system", "content": prompts.ROUTE_SYSTEM},
-        {"role": "user", "content": facts.model_dump_json()},
-    ]
-    return chat_json(messages, config.NANO_MODEL, "route", RouteDecision, thinking=False)
+def route_case(facts: CaseFacts) -> RouteDecision:
+    """Step 2 (code, no model): choose the document with a fixed legal rule.
+
+    Tutela when the delay puts health or life at imminent risk or the patient is a subject of
+    special constitutional protection; otherwise a derecho de petición. A model call here
+    flipped its answer in the evaluation set (D37), so the rule is applied by code.
+    """
+    reasons = []
+    if facts.special_protection:
+        who = f" ({facts.special_protection_reason})" if facts.special_protection_reason else ""
+        reasons.append(f"el paciente es sujeto de especial protección constitucional{who}")
+    if facts.urgent_health_risk:
+        reasons.append("la demora pone en riesgo inminente la salud o la vida del paciente")
+    if reasons:
+        return RouteDecision(
+            document_type="tutela", reason=f"Procede la tutela porque {' y '.join(reasons)}."
+        )
+    return RouteDecision(
+        document_type="derecho_de_peticion",
+        reason=(
+            "Procede el derecho de petición porque no hay un riesgo inminente para la salud: "
+            "primero se le pide a la EPS una respuesta formal y de fondo."
+        ),
+    )
 
 
 def run_research(
@@ -228,6 +245,7 @@ def run_draft(
             "draft",
             thinking=True,
             max_tokens=config.DRAFT_MAX_TOKENS,
+            temperature=config.DRAFT_TEMPERATURE,
         )
         all_metrics.append(metrics)
         sections = extract_sections(text, route.document_type)
@@ -334,15 +352,14 @@ def run_case(description: str, on_step: Callable[[str], None] | None = None) -> 
     description = validate_input(description)
     notify("intake")
     facts, intake_metrics = run_intake(description)
-    notify("route")
-    route, route_metrics = run_route(facts)
+    route = route_case(facts)
     notify("research")
     queries, sources, research_metrics = run_research(facts, route)
     notify("draft")
     draft, draft_metrics = run_draft(facts, route, sources)
     notify("explain")
     explanation, explain_metrics = run_explain(route, draft)
-    metrics = intake_metrics + route_metrics + research_metrics + draft_metrics + explain_metrics
+    metrics = intake_metrics + research_metrics + draft_metrics + explain_metrics
     return CaseResult(
         facts,
         route,

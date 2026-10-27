@@ -66,6 +66,9 @@ def check_case(result: CaseResult, expected: dict) -> dict:
         "rulings_cited": rulings_cited(result),
         "tokens": sum(m.prompt_tokens + m.completion_tokens for m in result.metrics),
         "latency_s": round(sum(m.latency_s for m in result.metrics), 1),
+        # Saved so a failure can be traced to the step that caused it.
+        "facts": result.facts.model_dump(),
+        "route_reason": result.route.reason,
     }
 
 

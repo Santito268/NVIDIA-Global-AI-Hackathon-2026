@@ -56,6 +56,30 @@ def test_chat_sends_thinking_switch_to_nebius(monkeypatch):
 
     llm.chat([], "some-model", "intake", thinking=False)
     assert sent["extra_body"] == {"chat_template_kwargs": {"enable_thinking": False}}
+    assert sent["temperature"] == 0  # classification steps never change their answer
+
+
+@pytest.mark.parametrize(
+    ("urgent", "special", "expected"),
+    [
+        (True, False, "tutela"),
+        (False, True, "tutela"),
+        (True, True, "tutela"),
+        (False, False, "derecho_de_peticion"),
+    ],
+)
+def test_route_is_a_fixed_rule_applied_by_code(urgent, special, expected):
+    facts = _facts().model_copy(
+        update={
+            "urgent_health_risk": urgent,
+            "special_protection": special,
+            "special_protection_reason": "adulto mayor" if special else None,
+        }
+    )
+    route = agent.route_case(facts)
+    assert route.document_type == expected
+    assert ("adulto mayor" in route.reason) == special
+    assert ("riesgo inminente la salud o la vida" in route.reason) == urgent
 
 
 def test_run_case_in_mock_mode():
@@ -64,7 +88,7 @@ def test_run_case_in_mock_mode():
     assert result.route.document_type in ("tutela", "derecho_de_peticion")
     assert result.queries and result.sources
     assert result.draft.title == "Acción de tutela"
-    assert [m.step for m in result.metrics] == ["intake", "route", "research", "draft", "explain"]
+    assert [m.step for m in result.metrics] == ["intake", "research", "draft", "explain"]
     assert result.explanation.summary and result.explanation.key_points
     assert result.next_steps == agent.NEXT_STEPS["es"]["tutela"]
     assert "[RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR]" in result.to_fill

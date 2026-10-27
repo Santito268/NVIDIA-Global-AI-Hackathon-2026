@@ -27,10 +27,6 @@ MOCK_RESPONSES: dict[str, str] = {
   "writer_relationship": "hijo/a",
   "missing_info": ["copia de la fórmula médica", "respuesta escrita de la EPS"]
 }""",
-    "route": """{
-  "document_type": "tutela",
-  "reason": "La negativa pone en riesgo la salud de un adulto mayor, por eso procede la tutela."
-}""",
     # Only the sections the model writes. The title and the wrong "Partes" are there on
     # purpose: the app must drop them and build those parts itself.
     "draft": """# ACCIÓN DE TUTELA

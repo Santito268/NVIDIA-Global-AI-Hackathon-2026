@@ -26,6 +26,10 @@ MAX_RETRIES: int = 3
 DEFAULT_MAX_TOKENS: int = 1500
 # Drafting reasons before writing a long document, so it needs more room.
 DRAFT_MAX_TOKENS: int = 8000
+# 0 = always the most likely answer: classification and JSON steps must not change their
+# answer between runs (they did at 0.2 in the evaluation set). Drafting keeps a little variety.
+TEMPERATURE: float = 0.0
+DRAFT_TEMPERATURE: float = 0.2
 
 # Limits that protect credits on the public demo
 MAX_INPUT_CHARS: int = 2000
