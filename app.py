@@ -5,8 +5,15 @@ from pathlib import Path
 import streamlit as st
 
 from src import config
-from src.agent import CaseResult, run_case, run_translate
+from src.agent import (
+    NEXT_STEPS,
+    CaseResult,
+    run_case,
+    run_translate_document,
+    run_translate_explanation,
+)
 from src.llm import LLMError
+from src.schemas import ExplanationText
 from src.tools import SearchError
 from src.ui_text import DOCUMENT_NAMES, UI_TEXT
 
@@ -28,7 +35,8 @@ def init_state() -> None:
     st.session_state.setdefault("description", "")
     st.session_state.setdefault("result", None)
     st.session_state.setdefault("cases_run", 0)
-    st.session_state.setdefault("translations", {})  # {language: {"explanation", "document"}}
+    # {language: {"explanation": ExplanationText, "document": str}, or None if it failed}
+    st.session_state.setdefault("translations", {})
     st.session_state.setdefault("translation_metrics", [])
 
 
@@ -52,41 +60,62 @@ def generate(description: str) -> None:
     st.session_state.translations = {}  # translations belong to the previous case
 
 
-def explanation_markdown(result: CaseResult) -> str:
-    """The explanation tab in Spanish, as one Markdown text (so it can be translated whole)."""
-    es = config.SOURCE_LANGUAGE
-    name = DOCUMENT_NAMES[es][result.route.document_type]
-    key_points = "\n".join(f"- {point}" for point in result.explanation.key_points)
+def explanation_markdown(result: CaseResult, lang: str, text: ExplanationText) -> str:
+    """The explanation tab. Headings, document name, blanks and next steps come from code in
+    every language; only `text` (reason, summary, key points) is ever translated by Nano."""
+    document_type = result.route.document_type
+    name = DOCUMENT_NAMES[lang][document_type]
+    key_points = "\n".join(f"- {point}" for point in text.key_points)
     to_fill = " ".join(f"`{placeholder}`" for placeholder in result.to_fill)
-    next_steps = "\n".join(f"{i}. {step}" for i, step in enumerate(result.next_steps, 1))
+    steps = NEXT_STEPS[lang][document_type]
+    next_steps = "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
     return (
-        f"**{t('document_type', es)}: {name}.** {result.route.reason}\n\n"
-        f"### {t('summary', es)}\n{result.explanation.summary}\n\n"
-        f"### {t('key_points', es)}\n{key_points}\n\n"
-        f"### {t('to_fill', es)}\n{to_fill}\n\n"
-        f"### {t('next_steps', es)}\n{next_steps}"
+        f"**{t('document_type', lang)}: {name}.** {text.reason}\n\n"
+        f"### {t('summary', lang)}\n{text.summary}\n\n"
+        f"### {t('key_points', lang)}\n{key_points}\n\n"
+        f"### {t('to_fill', lang)}\n{to_fill}\n\n"
+        f"### {t('next_steps', lang)}\n{next_steps}"
     )
+
+
+def translate(result: CaseResult, spanish: ExplanationText, lang: str) -> dict | None:
+    """Translate the case texts and the document once; None if the translation failed."""
+    target = config.LANGUAGES[lang]
+    try:
+        with st.spinner(t("translating")):
+            explanation, metrics = run_translate_explanation(spanish, target)
+            st.session_state.translation_metrics += metrics
+            document, metrics = run_translate_document(result.draft.body_markdown, target)
+            st.session_state.translation_metrics += metrics
+    except LLMError:
+        return None
+    return {"explanation": explanation, "document": document}
 
 
 def localized(result: CaseResult) -> dict[str, str]:
     """Explanation and document in the chosen language; translated once and then cached."""
-    spanish = {"explanation": explanation_markdown(result), "document": result.draft.body_markdown}
+    spanish = ExplanationText(
+        reason=result.route.reason,
+        summary=result.explanation.summary,
+        key_points=result.explanation.key_points,
+    )
     lang = language()
-    if lang == config.SOURCE_LANGUAGE:
-        return spanish
-    if lang not in st.session_state.translations:
-        target = config.LANGUAGES[lang]
-        try:
-            with st.spinner(t("translating")):
-                translated = {}
-                for part, text in spanish.items():
-                    translated[part], metrics = run_translate(text, target)
-                    st.session_state.translation_metrics += metrics
-        except LLMError:
-            st.warning(t("translation_error"))
-            return spanish
-        st.session_state.translations[lang] = translated
-    return st.session_state.translations[lang]
+    if lang != config.SOURCE_LANGUAGE:
+        if lang not in st.session_state.translations:
+            # A failure is cached too, so later clicks do not spend credits again.
+            st.session_state.translations[lang] = translate(result, spanish, lang)
+        translated = st.session_state.translations[lang]
+        if translated:
+            return {
+                "explanation": explanation_markdown(result, lang, translated["explanation"]),
+                "document": translated["document"],
+            }
+        st.warning(t("translation_error"))
+    es = config.SOURCE_LANGUAGE
+    return {
+        "explanation": explanation_markdown(result, es, spanish),
+        "document": result.draft.body_markdown,
+    }
 
 
 def show_explanation(result: CaseResult, texts: dict[str, str]) -> None:
@@ -101,7 +130,7 @@ def show_document(result: CaseResult, texts: dict[str, str]) -> None:
         file_name=f"{result.route.document_type}.md",
         mime="text/markdown",
     )
-    if language() != config.SOURCE_LANGUAGE:
+    if st.session_state.translations.get(language()):  # only when a translation is shown
         st.info(t("translation_notice"))
     with st.container(border=True):
         st.markdown(texts["document"])

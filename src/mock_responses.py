@@ -63,10 +63,17 @@ MOCK_RESPONSES: dict[str, str] = {
     "Que el juez tome una medida provisional, es decir, una orden urgente mientras decide."
   ]
 }""",
-    "translate": """### [Example translation]
-This is a sample English translation shown in demo mode. In live mode, Nemotron Nano
-translates the real Spanish text here. Placeholders such as [NOMBRE] stay as they are.
-""",
+    "translate_explanation": """{
+  "reason": "[Example translation] The denial puts an older adult's health at risk.",
+  "summary": "[Example translation] It is an acción de tutela (protection action).",
+  "key_points": [
+    "[Example translation] That the EPS delivers the insulin within 48 hours.",
+    "[Example translation] That the judge orders a medida provisional (provisional measure)."
+  ]
+}""",
+    # {input} is replaced by the text sent to the model, so the tokens ⟦n⟧ come back intact
+    # and the protect/restore round trip is tested without credits.
+    "translate_document": "### [Example translation]\n\n{input}",
     "research": """{
   "queries": [
     "tutela negación de medicamentos EPS",

@@ -61,7 +61,10 @@ def chat(
     start = time.perf_counter()
 
     if config.LLM_MODE == "mock":
+        # "{input}" lets a canned answer echo the request (used by the document translation).
         text = MOCK_RESPONSES.get(step, "")
+        if messages:
+            text = text.replace("{input}", messages[-1]["content"])
         metrics = CallMetrics(step, "mock", 0, 0, time.perf_counter() - start)
         return text, metrics
 

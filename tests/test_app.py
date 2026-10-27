@@ -7,7 +7,7 @@ from streamlit.testing.v1 import AppTest
 
 from src import agent, config
 from src.llm import LLMError
-from src.ui_text import UI_TEXT
+from src.ui_text import DOCUMENT_NAMES, UI_TEXT
 
 TEXT = UI_TEXT["es"]
 APP_PATH = Path(__file__).resolve().parent.parent / "app.py"
@@ -92,15 +92,22 @@ def test_page_starts_in_spanish():
     assert at.button(key="generate").label == TEXT["generate_button"]
 
 
+def _count_translations(monkeypatch) -> list[str]:
+    """Wrap both translation functions so a test can count the calls to Nano."""
+    calls: list[str] = []
+    for name in ("run_translate_explanation", "run_translate_document"):
+        real = getattr(agent, name)
+
+        def counting(text, language, real=real, name=name):
+            calls.append(name)
+            return real(text, language)
+
+        monkeypatch.setattr(agent, name, counting)
+    return calls
+
+
 def test_switching_to_english_translates_the_results_once(monkeypatch):
-    calls = []
-    real_translate = agent.run_translate
-
-    def counting_translate(text, language):
-        calls.append(language)
-        return real_translate(text, language)
-
-    monkeypatch.setattr(agent, "run_translate", counting_translate)
+    calls = _count_translations(monkeypatch)
     at = _app()
     at.button(key="sample").click().run()
     at.button(key="generate").click().run()
@@ -111,9 +118,44 @@ def test_switching_to_english_translates_the_results_once(monkeypatch):
     assert at.button(key="generate").label == english["generate_button"]
     assert [tab.label for tab in at.tabs][0] == english["tab_explanation"]
     assert english["translation_notice"] in [i.value for i in at.info]
-    assert "[Example translation]" in _all_text(at)
-    assert calls == ["English", "English"]  # explanation + document
+    text = _all_text(at)
+    assert "[Example translation]" in text
+    assert calls == ["run_translate_explanation", "run_translate_document"]
 
     at.segmented_control(key="language").set_value("es").run()
     at.segmented_control(key="language").set_value("en").run()
     assert len(calls) == 2  # cached: switching back and forth costs nothing
+
+
+def test_english_headings_and_next_steps_come_from_code_not_from_the_model():
+    at = _app()
+    at.button(key="sample").click().run()
+    at.button(key="generate").click().run()
+    at.segmented_control(key="language").set_value("en").run()
+    text = _all_text(at)
+    assert f"**{UI_TEXT['en']['document_type']}: {DOCUMENT_NAMES['en']['tutela']}.**" in text
+    assert agent.NEXT_STEPS["en"]["tutela"][3] in text
+    assert "[RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR]" in text  # blanks stay in Spanish
+    assert "Documento recomendado" not in text
+
+
+def test_failed_translation_falls_back_to_spanish_and_is_not_retried(monkeypatch):
+    calls = []
+
+    def failing_translate(text, language):
+        calls.append(language)
+        raise LLMError("The translation changed protected text.")
+
+    monkeypatch.setattr(agent, "run_translate_explanation", failing_translate)
+    at = _app()
+    at.button(key="sample").click().run()
+    at.button(key="generate").click().run()
+    at.segmented_control(key="language").set_value("en").run()
+
+    assert not at.exception
+    assert UI_TEXT["en"]["translation_error"] in [w.value for w in at.warning]
+    assert UI_TEXT["en"]["translation_notice"] not in [i.value for i in at.info]
+    assert "# ACCIÓN DE TUTELA" in _all_text(at)
+    at.segmented_control(key="language").set_value("es").run()
+    at.segmented_control(key="language").set_value("en").run()
+    assert len(calls) == 1

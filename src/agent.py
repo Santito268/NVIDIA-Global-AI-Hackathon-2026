@@ -13,6 +13,7 @@ from src.schemas import (
     CaseFacts,
     DraftDocument,
     Explanation,
+    ExplanationText,
     RouteDecision,
     SearchPlan,
     Source,
@@ -25,29 +26,61 @@ REMOVED_URL_NOTE = "[enlace eliminado: no proviene de una fuente verificada]"
 QUOTE_PATTERN = re.compile(r"«([^«»]+)»")
 REMOVED_QUOTE_NOTE = "[cita eliminada: no aparece en la fuente]"
 PLACEHOLDER_PATTERN = re.compile(r"\[[A-ZÁÉÍÓÚÑ ]+\]")
+# The title and the addressee built by src/document.py: formal names that stay in Spanish
+# (in a live test Nano misspelled the title and dropped the addressee line).
+HEADER_PATTERN = re.compile(r"(?m:^# .+$|^Señor\(a\) Juez de la República \(reparto\)$|^Señores$)")
+# Text the translation must never touch: quotes, URLs, blanks and the header. Each one is
+# swapped for a numbered token before translating and put back afterwards.
+PROTECTED_PATTERN = re.compile(
+    "|".join(p.pattern for p in (HEADER_PATTERN, QUOTE_PATTERN, URL_PATTERN, PLACEHOLDER_PATTERN))
+)
+TOKEN_PATTERN = re.compile(r"⟦\d+⟧")
 
-# Fixed, hand-written next steps: deadlines are legal facts, so the model never writes them.
-# Every legal statement here is in the verified mini legal code (data/legal/mini_codigo.json).
-NEXT_STEPS = {
-    "tutela": [
-        "Llena los espacios entre corchetes y revisa que los hechos sean correctos.",
-        "Firma el documento. Al presentarlo declaras bajo juramento que no has presentado otra "
-        "tutela por los mismos hechos y derechos (art. 37 del Decreto 2591 de 1991).",
-        "Preséntalo ante un juez con los anexos. No necesitas abogado (art. 14 del Decreto 2591 "
-        "de 1991) y todos los días y horas son hábiles para presentarla (art. 1).",
-        "El juez debe decidir dentro de los diez días siguientes, y el plazo para cumplir su "
-        "orden no puede pasar de 48 horas (art. 29 del Decreto 2591 de 1991).",
-        "Guarda una copia con la constancia de que lo presentaste.",
-    ],
-    "derecho_de_peticion": [
-        "Llena los espacios entre corchetes y revisa que los hechos sean correctos.",
-        "Firma el documento y radícalo ante la EPS con los anexos. Guarda una copia con la "
-        "fecha en que lo recibieron.",
-        "Las reglas del derecho de petición también se aplican a las EPS (art. 33 de la Ley "
-        "1755 de 2015).",
-        "Por regla general, la petición debe resolverse dentro de los quince (15) días "
-        "siguientes a su recepción (art. 14 de la Ley 1755 de 2015).",
-    ],
+# Fixed, hand-written next steps per language: deadlines are legal facts, so the model never
+# writes or translates them. Every legal statement is in the verified mini legal code
+# (data/legal/mini_codigo.json); a test checks that every language cites the same numbers.
+NEXT_STEPS: dict[str, dict[str, list[str]]] = {
+    "es": {
+        "tutela": [
+            "Llena los espacios entre corchetes y revisa que los hechos sean correctos.",
+            "Firma el documento. Al presentarlo declaras bajo juramento que no has presentado "
+            "otra tutela por los mismos hechos y derechos (art. 37 del Decreto 2591 de 1991).",
+            "Preséntalo ante un juez con los anexos. No necesitas abogado (art. 14 del Decreto "
+            "2591 de 1991) y todos los días y horas son hábiles para presentarla (art. 1).",
+            "El juez debe decidir dentro de los diez días siguientes, y el plazo para cumplir su "
+            "orden no puede pasar de 48 horas (art. 29 del Decreto 2591 de 1991).",
+            "Guarda una copia con la constancia de que lo presentaste.",
+        ],
+        "derecho_de_peticion": [
+            "Llena los espacios entre corchetes y revisa que los hechos sean correctos.",
+            "Firma el documento y radícalo ante la EPS con los anexos. Guarda una copia con la "
+            "fecha en que lo recibieron.",
+            "Las reglas del derecho de petición también se aplican a las EPS (art. 33 de la Ley "
+            "1755 de 2015).",
+            "Por regla general, la petición debe resolverse dentro de los quince (15) días "
+            "siguientes a su recepción (art. 14 de la Ley 1755 de 2015).",
+        ],
+    },
+    "en": {
+        "tutela": [
+            "Fill in the blanks in brackets and check that the facts are correct.",
+            "Sign the document. By filing it you declare under oath that you have not filed "
+            "another tutela for the same facts and rights (art. 37 of Decreto 2591 de 1991).",
+            "File it before a judge with the annexes. You do not need a lawyer (art. 14 of "
+            "Decreto 2591 de 1991) and it can be filed any day, at any time (art. 1).",
+            "The judge must decide within the following ten days, and the deadline to comply "
+            "with the order cannot exceed 48 hours (art. 29 of Decreto 2591 de 1991).",
+            "Keep a copy with the proof that you filed it.",
+        ],
+        "derecho_de_peticion": [
+            "Fill in the blanks in brackets and check that the facts are correct.",
+            "Sign the document and file it with the EPS, with the annexes. Keep a copy showing "
+            "the date they received it.",
+            "The rules of the derecho de petición also apply to EPS (art. 33 of Ley 1755 de 2015).",
+            "As a general rule, the petition must be answered within fifteen (15) days of its "
+            "receipt (art. 14 of Ley 1755 de 2015).",
+        ],
+    },
 }
 
 
@@ -214,22 +247,66 @@ def run_explain(
     return chat_json(messages, config.NANO_MODEL, "explain", Explanation, thinking=False)
 
 
-def run_translate(text: str, language: str) -> tuple[str, list[CallMetrics]]:
-    """Translate a Spanish result into `language` (a name such as "English") with Nano."""
+def protect(text: str) -> tuple[str, list[str]]:
+    """Swap quotes, URLs and blanks for tokens ⟦1⟧, ⟦2⟧...; return the text and the originals."""
+    originals: list[str] = []
+
+    def swap(match: re.Match) -> str:
+        originals.append(match.group(0))
+        return f"⟦{len(originals)}⟧"
+
+    return PROTECTED_PATTERN.sub(swap, text), originals
+
+
+def restore(text: str, originals: list[str]) -> str:
+    """Put the originals back; fail if the translation lost, repeated or invented a token."""
+    expected = [f"⟦{i}⟧" for i in range(1, len(originals) + 1)]
+    if sorted(TOKEN_PATTERN.findall(text)) != sorted(expected):
+        raise LLMError("The translation changed protected text. Showing the Spanish version.")
+    for token, original in zip(expected, originals, strict=True):
+        text = text.replace(token, original)
+    return text
+
+
+def run_translate_document(text: str, language: str) -> tuple[str, list[CallMetrics]]:
+    """Translate the Spanish document into `language` (e.g. "English") with Nano.
+
+    Quotes, URLs and blanks never reach the model: they are protected with tokens.
+    """
+    protected, originals = protect(text)
     messages = [
-        {"role": "system", "content": prompts.TRANSLATE_SYSTEM.format(language=language)},
-        {"role": "user", "content": text},
+        {"role": "system", "content": prompts.TRANSLATE_DOCUMENT_SYSTEM.format(language=language)},
+        {"role": "user", "content": protected},
     ]
     translation, metrics = chat(
         messages,
         config.NANO_MODEL,
-        "translate",
+        "translate_document",
         thinking=False,
         max_tokens=config.DRAFT_MAX_TOKENS,
     )
     if not translation:
         raise LLMError("The translation came back empty. Please try again.")
-    return translation, [metrics]
+    return restore(translation, originals), [metrics]
+
+
+def run_translate_explanation(
+    text: ExplanationText, language: str
+) -> tuple[ExplanationText, list[CallMetrics]]:
+    """Translate only the case-specific parts of the explanation, as validated JSON (Nano)."""
+    messages = [
+        {
+            "role": "system",
+            "content": prompts.TRANSLATE_EXPLANATION_SYSTEM.format(language=language),
+        },
+        {"role": "user", "content": text.model_dump_json()},
+    ]
+    translation, metrics = chat_json(
+        messages, config.NANO_MODEL, "translate_explanation", ExplanationText, thinking=False
+    )
+    if len(translation.key_points) != len(text.key_points):
+        raise LLMError("The translation lost a key point. Showing the Spanish version.")
+    return translation, metrics
 
 
 def run_case(description: str, on_step: Callable[[str], None] | None = None) -> CaseResult:
@@ -255,7 +332,7 @@ def run_case(description: str, on_step: Callable[[str], None] | None = None) -> 
         draft,
         explanation,
         to_fill=find_placeholders(draft.body_markdown),
-        next_steps=NEXT_STEPS[route.document_type],
+        next_steps=NEXT_STEPS[config.SOURCE_LANGUAGE][route.document_type],
         metrics=metrics,
     )
 

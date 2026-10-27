@@ -60,24 +60,56 @@ Rules:
 - Only describe what the document says. Never add laws, deadlines, legal advice or chances of
   winning: the app shows the next steps separately.
 - Never write personal data.
-- Text in [BRACKETS] is a blank the citizen will fill in. Never guess what it will say
-  (e.g. never invent why the patient cannot act).
+- Text in [BRACKETS] is a blank the citizen will fill in. Never guess what it will say.
+- If someone acts as "agente oficioso" for the patient, the reason why the patient cannot
+  act is UNKNOWN: it is a blank. Say only that the citizen must write that reason; never
+  suggest one (not "because the patient is very ill", not anything else).
 
 Answer ONLY with a JSON object with these keys:
 summary (3 or 4 sentences: what document it is, who receives it, what it asks for and why),
 key_points (a list of 2 to 4 short sentences with the main things the document asks for)."""
 
-TRANSLATE_SYSTEM = """You translate Colombian legal texts from Spanish into {language} so that
-a reader who does not speak Spanish can understand them.
+# Shared by both translation prompts. Spanish legal names stay, with a translation in
+# parentheses, so the reader can match them with the Spanish document they will file.
+_LEGAL_TERMS = """Keep these Spanish legal names the first time they appear, followed by the
+translation in parentheses, and keep them in Spanish after that:
+- "acción de tutela" / "tutela" (constitutional protection action)
+- "derecho de petición" (formal petition)
+- "agente oficioso" (person acting on behalf of someone who cannot act)
+- "accionante" (petitioner) and "accionada" (respondent)
+- "medida provisional" (provisional measure)
+- "EPS" (health insurer)
+Names of laws stay in Spanish (e.g. "Decreto 2591 de 1991", "Constitución Política")."""
+
+TRANSLATE_DOCUMENT_SYSTEM = (
+    """You translate a Colombian legal document from Spanish into {language} so that a reader
+who does not speak Spanish can understand it.
 
 Rules:
 - Keep the Markdown formatting (headings, lists, bold) exactly as it is.
-- Do not translate or change: text in [BRACKETS], URLs, and quotes between « », which are
-  official sources and must stay in Spanish.
-- Keep the Spanish legal names the first time they appear, with the translation in
-  parentheses, e.g. "acción de tutela (constitutional protection action)".
-- Translate everything else faithfully. Do not add, remove or explain anything.
+- Tokens like ⟦1⟧ or ⟦12⟧ stand for text that must not be translated. Copy every token
+  exactly once, unchanged, in the same place in the sentence.
+- Translate every other word, including headings and the title.
+"""
+    + _LEGAL_TERMS
+    + """
+- Translate faithfully. Do not add, remove or explain anything.
 - Answer ONLY with the translation."""
+)
+
+TRANSLATE_EXPLANATION_SYSTEM = (
+    """You translate a short explanation for a Colombian citizen from Spanish into {language}.
+You receive a JSON object with the keys reason, summary and key_points.
+
+Rules:
+- Translate every value faithfully and simply. Do not add, remove or explain anything.
+- Keep the same number of key_points, in the same order.
+- Do not translate text in [BRACKETS].
+"""
+    + _LEGAL_TERMS
+    + """
+Answer ONLY with a JSON object with the same keys: reason, summary, key_points."""
+)
 
 # The app builds the fixed parts (parties, annexes, oath, notifications, signature) in
 # src/document.py; the model only writes the sections that need legal reasoning.

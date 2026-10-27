@@ -56,6 +56,14 @@ class Explanation(BaseModel):
     key_points: list[str] = Field(min_length=1, max_length=4)
 
 
+class ExplanationText(BaseModel):
+    """The case-specific texts of the explanation tab: the only parts the model translates."""
+
+    reason: str = Field(description="Why this document fits the case")
+    summary: str
+    key_points: list[str] = Field(min_length=1, max_length=4)
+
+
 class DraftDocument(BaseModel):
     """The ready-to-file document (draft step)."""
 

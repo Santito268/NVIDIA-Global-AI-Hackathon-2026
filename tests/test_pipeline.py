@@ -1,12 +1,13 @@
 """Pipeline tests. They run in mock mode: no network, no credits."""
 
+import re
 from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
 from src import agent, config, legal, llm
-from src.schemas import CaseFacts, RouteDecision, SearchPlan, Source
+from src.schemas import CaseFacts, ExplanationText, RouteDecision, SearchPlan, Source
 
 
 @pytest.fixture(autouse=True)
@@ -65,7 +66,7 @@ def test_run_case_in_mock_mode():
     assert result.draft.title == "Acción de tutela"
     assert [m.step for m in result.metrics] == ["intake", "route", "research", "draft", "explain"]
     assert result.explanation.summary and result.explanation.key_points
-    assert result.next_steps == agent.NEXT_STEPS["tutela"]
+    assert result.next_steps == agent.NEXT_STEPS["es"]["tutela"]
     assert "[RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR]" in result.to_fill
 
 
@@ -84,10 +85,58 @@ def test_find_placeholders_lists_each_one_once_in_order():
 )
 def test_next_step_deadlines_match_the_official_text(deadline):
     official = " ".join(legal.corpus_excerpts()).lower()
-    written = " ".join(step for steps in agent.NEXT_STEPS.values() for step in steps)
+    written = " ".join(step for steps in agent.NEXT_STEPS["es"].values() for step in steps)
     assert deadline in written
     key = {"no puede pasar de 48 horas": "exceder de 48 horas"}.get(deadline, deadline)
     assert key in official
+
+
+def test_next_steps_in_every_language_cite_the_same_numbers():
+    spanish = agent.NEXT_STEPS[config.SOURCE_LANGUAGE]
+    for lang in config.LANGUAGES:
+        steps = agent.NEXT_STEPS[lang]
+        assert steps.keys() == spanish.keys()
+        for document_type, spanish_steps in spanish.items():
+            assert len(steps[document_type]) == len(spanish_steps)
+            for step, spanish_step in zip(steps[document_type], spanish_steps, strict=True):
+                assert re.findall(r"\d+", step) == re.findall(r"\d+", spanish_step)
+
+
+def test_protect_and_restore_keep_quotes_urls_and_blanks_untouched():
+    text = "Firma: [NOMBRE]. En https://x.gov.co/t-1 se lee: «la salud es un derecho»."
+    protected, originals = agent.protect(text)
+    assert protected == "Firma: ⟦1⟧. En ⟦2⟧ se lee: ⟦3⟧."
+    translated = "Signature: ⟦1⟧. At ⟦2⟧ it reads: ⟦3⟧."
+    assert agent.restore(translated, originals) == (
+        "Signature: [NOMBRE]. At https://x.gov.co/t-1 it reads: «la salud es un derecho»."
+    )
+
+
+def test_protect_keeps_the_title_and_the_addressee_in_spanish():
+    document = agent.run_case("La EPS no me entrega un medicamento.").draft.body_markdown
+    originals = agent.protect(document)[1]
+    assert originals[:2] == ["# ACCIÓN DE TUTELA", "Señor(a) Juez de la República (reparto)"]
+    assert "## Partes" not in originals  # section headings are still translated
+
+
+@pytest.mark.parametrize("broken", ["Signature: ⟦1⟧.", "⟦1⟧ ⟦1⟧ ⟦2⟧", "⟦1⟧ ⟦2⟧ ⟦3⟧"])
+def test_restore_fails_if_the_translation_lost_or_invented_a_token(broken):
+    with pytest.raises(llm.LLMError):
+        agent.restore(broken, ["[NOMBRE]", "https://x.gov.co"])
+
+
+def test_mock_document_translation_keeps_every_protected_text():
+    document = agent.run_case("La EPS no me entrega un medicamento.").draft.body_markdown
+    translation, _ = agent.run_translate_document(document, "English")
+    assert translation.startswith("### [Example translation]")
+    for original in agent.protect(document)[1]:
+        assert original in translation
+
+
+def test_explanation_translation_must_keep_every_key_point():
+    spanish = ExplanationText(reason="r", summary="s", key_points=["a", "b", "c"])
+    with pytest.raises(llm.LLMError):  # the mock answer has only 2 key points
+        agent.run_translate_explanation(spanish, "English")
 
 
 def test_draft_removes_invented_urls_and_keeps_verified_ones():
