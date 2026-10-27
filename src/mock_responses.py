@@ -22,7 +22,7 @@ MOCK_RESPONSES: dict[str, str] = {
   "relevant_dates": ["2026-10-01"],
   "urgent_health_risk": true,
   "special_protection": true,
-  "special_protection_reason": "adulto mayor",
+  "special_protection_group": "older_adult",
   "writer_is_affected_person": false,
   "writer_relationship": "hijo/a",
   "missing_info": ["copia de la fórmula médica", "respuesta escrita de la EPS"]
@@ -60,16 +60,15 @@ MOCK_RESPONSES: dict[str, str] = {
   ]
 }""",
     "translate_explanation": """{
-  "reason": "[Example translation] The denial puts an older adult's health at risk.",
   "summary": "[Example translation] It is an acción de tutela (protection action).",
   "key_points": [
     "[Example translation] That the EPS delivers the insulin within 48 hours.",
     "[Example translation] That the judge orders a medida provisional (provisional measure)."
   ]
 }""",
-    # {input} is replaced by the text sent to the model, so the tokens ⟦n⟧ come back intact
-    # and the protect/restore round trip is tested without credits.
-    "translate_document": "### [Example translation]\n\n{input}",
+    # {input} is replaced by the text sent to the model, so the section markers and tokens
+    # come back intact and the protect/restore round trip is tested without credits.
+    "translate_sections": "{input}",
     "research": """{
   "queries": [
     "tutela negación de medicamentos EPS",

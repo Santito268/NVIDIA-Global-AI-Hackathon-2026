@@ -17,7 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class SearchError(Exception):
-    """Raised with a message that is safe to show to the user."""
+    """Raised with a message that is safe to show to the user; `code` as in LLMError."""
+
+    def __init__(self, message: str, code: str = "search_failed") -> None:
+        super().__init__(message)
+        self.code = code
 
 
 def _to_sources(results: list[dict]) -> list[Source]:
@@ -46,9 +50,11 @@ def search_web(query: str, max_results: int = config.RESULTS_PER_SEARCH) -> list
             include_domains=config.TRUSTED_DOMAINS,
         )
     except (InvalidAPIKeyError, MissingAPIKeyError) as exc:
-        raise SearchError("The Tavily API key is missing or invalid.") from exc
+        raise SearchError("The Tavily API key is missing or invalid.", "config") from exc
     except UsageLimitExceededError as exc:
-        raise SearchError("The free web searches for this month are used up.") from exc
+        raise SearchError(
+            "The free web searches for this month are used up.", "search_limit"
+        ) from exc
     except Exception as exc:
         raise SearchError("The web search failed. Please try again.") from exc
 

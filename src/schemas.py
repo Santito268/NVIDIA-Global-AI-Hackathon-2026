@@ -17,7 +17,10 @@ class CaseFacts(BaseModel):
     relevant_dates: list[str] = Field(default_factory=list)
     urgent_health_risk: bool = Field(description="True if delay risks the person's health or life")
     special_protection: bool = Field(description="Minor, older adult, disability, pregnancy, etc.")
-    special_protection_reason: str | None = None
+    # A fixed list (not free text) so the app can name the group in every language.
+    special_protection_group: (
+        Literal["child", "older_adult", "disability", "pregnancy", "serious_illness"] | None
+    ) = None
     # No default on purpose: the model must decide it (it changes who files the tutela).
     writer_is_affected_person: bool = Field(
         description="False if someone writes on behalf of the affected person (agencia oficiosa)"
@@ -59,7 +62,6 @@ class Explanation(BaseModel):
 class ExplanationText(BaseModel):
     """The case-specific texts of the explanation tab: the only parts the model translates."""
 
-    reason: str = Field(description="Why this document fits the case")
     summary: str
     key_points: list[str] = Field(min_length=1, max_length=4)
 
@@ -69,4 +71,6 @@ class DraftDocument(BaseModel):
 
     title: str
     body_markdown: str
+    # The model's checked sections, keyed by Spanish heading: the only parts ever translated.
+    sections: dict[str, str] = Field(default_factory=dict)
     cited_urls: list[str] = Field(default_factory=list)

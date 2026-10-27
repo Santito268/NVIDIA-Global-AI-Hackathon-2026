@@ -102,7 +102,7 @@ def test_page_starts_in_spanish():
 def _count_translations(monkeypatch) -> list[str]:
     """Wrap both translation functions so a test can count the calls to Nano."""
     calls: list[str] = []
-    for name in ("run_translate_explanation", "run_translate_document"):
+    for name in ("run_translate_explanation", "run_translate_sections"):
         real = getattr(agent, name)
 
         def counting(text, language, real=real, name=name):
@@ -127,7 +127,7 @@ def test_switching_to_english_translates_the_results_once(monkeypatch):
     assert english["translation_notice"] in [i.value for i in at.info]
     text = _all_text(at)
     assert "[Example translation]" in text
-    assert calls == ["run_translate_explanation", "run_translate_document"]
+    assert calls == ["run_translate_explanation", "run_translate_sections"]
 
     at.segmented_control(key="language").set_value("es").run()
     at.segmented_control(key="language").set_value("en").run()
@@ -142,8 +142,23 @@ def test_english_headings_and_next_steps_come_from_code_not_from_the_model():
     text = _all_text(at)
     assert f"**{UI_TEXT['en']['document_type']}: {DOCUMENT_NAMES['en']['tutela']}.**" in text
     assert agent.NEXT_STEPS["en"]["tutela"][3] in text
-    assert "[RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR]" in text  # blanks stay in Spanish
-    assert "Documento recomendado" not in text
+    assert "A tutela is the right document because" in text  # hand-written reason
+    assert "## Parties" in text and "# ACCIÓN DE TUTELA (constitutional" in text
+    assert "[REASON THE PATIENT CANNOT ACT]" in text  # blanks hand-written in English
+    assert "[NOMBRE]" not in text and "Documento recomendado" not in text
+    # The download is still the Spanish original.
+    assert at.session_state.result.draft.body_markdown.startswith("# ACCIÓN DE TUTELA\n")
+
+
+def test_errors_are_shown_in_the_chosen_language(monkeypatch):
+    def failing_run_case(*args, **kwargs):
+        raise LLMError("The model took too long to answer.", "timeout")
+
+    monkeypatch.setattr(agent, "run_case", failing_run_case)
+    at = _app()
+    at.button(key="sample").click().run()
+    at.button(key="generate").click().run()
+    assert TEXT["error_timeout"] in [c.value for c in at.caption]
 
 
 def test_failed_translation_falls_back_to_spanish_and_is_not_retried(monkeypatch):

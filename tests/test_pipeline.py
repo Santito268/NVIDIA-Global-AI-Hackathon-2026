@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
-from src import agent, config, legal, llm
+from src import agent, config, document, legal, llm
 from src.schemas import CaseFacts, ExplanationText, RouteDecision, SearchPlan, Source
 
 
@@ -73,13 +73,23 @@ def test_route_is_a_fixed_rule_applied_by_code(urgent, special, expected):
         update={
             "urgent_health_risk": urgent,
             "special_protection": special,
-            "special_protection_reason": "adulto mayor" if special else None,
+            "special_protection_group": "older_adult" if special else None,
         }
     )
     route = agent.route_case(facts)
     assert route.document_type == expected
-    assert ("adulto mayor" in route.reason) == special
+    assert ("(adulto mayor)" in route.reason) == special
     assert ("riesgo inminente la salud o la vida" in route.reason) == urgent
+
+    english = agent.route_reason(facts, route.document_type, "en")
+    assert ("(an older adult)" in english) == special
+    assert ("health or life at imminent risk" in english) == urgent
+
+
+def test_route_reasons_and_protection_groups_exist_in_every_language():
+    for lang in config.LANGUAGES:
+        assert agent.ROUTE_REASONS[lang].keys() == agent.ROUTE_REASONS["es"].keys()
+        assert agent.PROTECTION_GROUPS[lang].keys() == agent.PROTECTION_GROUPS["es"].keys()
 
 
 def test_run_case_in_mock_mode():
@@ -136,29 +146,29 @@ def test_protect_and_restore_keep_quotes_urls_and_blanks_untouched():
     )
 
 
-def test_protect_keeps_the_title_and_the_addressee_in_spanish():
-    document = agent.run_case("La EPS no me entrega un medicamento.").draft.body_markdown
-    originals = agent.protect(document)[1]
-    assert originals[:2] == ["# ACCIÓN DE TUTELA", "Señor(a) Juez de la República (reparto)"]
-    assert "## Partes" not in originals  # section headings are still translated
-
-
 @pytest.mark.parametrize("broken", ["Signature: ⟦1⟧.", "⟦1⟧ ⟦1⟧ ⟦2⟧", "⟦1⟧ ⟦2⟧ ⟦3⟧"])
 def test_restore_fails_if_the_translation_lost_or_invented_a_token(broken):
     with pytest.raises(llm.LLMError):
         agent.restore(broken, ["[NOMBRE]", "https://x.gov.co"])
 
 
-def test_mock_document_translation_keeps_every_protected_text():
-    document = agent.run_case("La EPS no me entrega un medicamento.").draft.body_markdown
-    translation, _ = agent.run_translate_document(document, "English")
-    assert translation.startswith("### [Example translation]")
-    for original in agent.protect(document)[1]:
-        assert original in translation
+def test_only_the_model_sections_are_sent_to_translation():
+    draft = agent.run_case("La EPS no me entrega un medicamento.").draft
+    assert list(draft.sections) == document.MODEL_SECTIONS["tutela"]
+    translated, _ = agent.run_translate_sections(draft.sections, "English")
+    assert translated == draft.sections  # the mock echoes: markers and tokens round-trip
+
+
+def test_sections_translation_fails_if_a_section_marker_is_lost(monkeypatch):
+    monkeypatch.setattr(
+        agent, "chat", lambda *a, **k: ("⟦S1⟧\nFacts only", llm.CallMetrics("t", "m", 0, 0, 0))
+    )
+    with pytest.raises(llm.LLMError):
+        agent.run_translate_sections({"Hechos": "h", "Peticiones": "p"}, "English")
 
 
 def test_explanation_translation_must_keep_every_key_point():
-    spanish = ExplanationText(reason="r", summary="s", key_points=["a", "b", "c"])
+    spanish = ExplanationText(summary="s", key_points=["a", "b", "c"])
     with pytest.raises(llm.LLMError):  # the mock answer has only 2 key points
         agent.run_translate_explanation(spanish, "English")
 
@@ -193,6 +203,15 @@ def test_quotes_must_be_copied_from_a_snippet_or_the_legal_code():
     assert "«la eps debe entregar la insulina»" in body
     assert f"«{law}»" in body
     assert "48 horas" not in body and body.count(agent.REMOVED_QUOTE_NOTE) == 1
+
+
+@pytest.mark.parametrize(
+    "quote", ["«... insulina glargina ...»", "«la EPS … entregar la insulina hoy mismo»"]
+)
+def test_short_quotes_or_quotes_with_gaps_are_removed(quote):
+    snippet = "La EPS debe entregar la insulina glargina hoy mismo al paciente."
+    source = Source(title="T", url="https://x.gov.co", snippet=snippet)
+    assert agent.remove_unverified_quotes(quote, [source]) == agent.REMOVED_QUOTE_NOTE
 
 
 def test_mock_draft_drops_the_invented_quote():

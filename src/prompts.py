@@ -17,7 +17,7 @@ Rules:
 - Set "special_protection" to true if the affected person is a subject of special
   constitutional protection in Colombia: a child or adolescent (under 18), an older adult
   (60 or older), a person with a disability, a pregnant woman, or a person with a serious or
-  catastrophic illness. Explain which one in "special_protection_reason".
+  catastrophic illness. Put which one in "special_protection_group".
 - Set "writer_is_affected_person" to false if the person writing describes someone else's
   problem (e.g. "mi papá", "mi hija", "mi mamá no puede caminar"), and put the relationship
   of the writer to that person in "writer_relationship" (e.g. "hijo/a", "padre/madre").
@@ -27,7 +27,8 @@ Answer ONLY with a JSON object with these keys:
 eps (string or null), problem_type (one of: medicine_denied, appointment_not_scheduled,
 authorization_delayed, other), service_requested (string or null), events_summary (string),
 relevant_dates (list of strings), urgent_health_risk (boolean), special_protection (boolean),
-special_protection_reason (string or null), writer_is_affected_person (boolean),
+special_protection_group (one of: child, older_adult, disability, pregnancy,
+serious_illness, or null), writer_is_affected_person (boolean),
 writer_relationship (string or null), missing_info (list of strings)."""
 
 
@@ -77,15 +78,16 @@ translation in parentheses, and keep them in Spanish after that:
 - "EPS" (health insurer)
 Names of laws stay in Spanish (e.g. "Decreto 2591 de 1991", "Constitución Política")."""
 
-TRANSLATE_DOCUMENT_SYSTEM = (
-    """You translate a Colombian legal document from Spanish into {language} so that a reader
-who does not speak Spanish can understand it.
+TRANSLATE_SECTIONS_SYSTEM = (
+    """You translate sections of a Colombian legal document from Spanish into {language} so
+that a reader who does not speak Spanish can understand them.
 
 Rules:
-- Keep the Markdown formatting (headings, lists, bold) exactly as it is.
+- Each section starts with a marker line such as ⟦S1⟧ or ⟦S2⟧. Copy every marker line
+  exactly once, unchanged, before its section.
 - Tokens like ⟦1⟧ or ⟦12⟧ stand for text that must not be translated. Copy every token
   exactly once, unchanged, in the same place in the sentence.
-- Translate every other word, including headings and the title.
+- Keep the Markdown formatting (lists, numbering, bold) exactly as it is.
 """
     + _LEGAL_TERMS
     + """
@@ -95,7 +97,7 @@ Rules:
 
 TRANSLATE_EXPLANATION_SYSTEM = (
     """You translate a short explanation for a Colombian citizen from Spanish into {language}.
-You receive a JSON object with the keys reason, summary and key_points.
+You receive a JSON object with the keys summary and key_points.
 
 Rules:
 - Translate every value faithfully and simply. Do not add, remove or explain anything.
@@ -104,7 +106,7 @@ Rules:
 """
     + _LEGAL_TERMS
     + """
-Answer ONLY with a JSON object with the same keys: reason, summary, key_points."""
+Answer ONLY with a JSON object with the same keys: summary, key_points."""
 )
 
 # The app builds the fixed parts (parties, annexes, oath, notifications, signature) in

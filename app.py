@@ -10,10 +10,12 @@ from src import config
 from src.agent import (
     NEXT_STEPS,
     CaseResult,
+    route_reason,
     run_case,
-    run_translate_document,
     run_translate_explanation,
+    run_translate_sections,
 )
+from src.document import build_document, localize_placeholders
 from src.llm import LLMError
 from src.schemas import ExplanationText
 from src.tools import SearchError
@@ -37,7 +39,7 @@ def init_state() -> None:
     st.session_state.setdefault("description", "")
     st.session_state.setdefault("result", None)
     st.session_state.setdefault("cases_run", 0)
-    # {language: {"explanation": ExplanationText, "document": str}, or None if it failed}
+    # {language: {"explanation": ExplanationText, "sections": dict}, or None if it failed}
     st.session_state.setdefault("translations", {})
     st.session_state.setdefault("translation_metrics", [])
 
@@ -77,7 +79,7 @@ def generate(description: str) -> None:
         except (LLMError, SearchError) as error:
             status.update(label=t("status_error"), state="error")
             st.error(t("error_message"))
-            st.caption(str(error))
+            st.caption(t(f"error_{error.code}"))
             return
         status.update(label=t("status_done"), state="complete", expanded=False)
     st.session_state.result = result
@@ -85,16 +87,17 @@ def generate(description: str) -> None:
 
 
 def explanation_markdown(result: CaseResult, lang: str, text: ExplanationText) -> str:
-    """The explanation tab. Headings, document name, blanks and next steps come from code in
-    every language; only `text` (reason, summary, key points) is ever translated by Nano."""
+    """The explanation tab. Everything is hand-written per language except `text` (summary
+    and key points), the only part Nano translates."""
     document_type = result.route.document_type
     name = DOCUMENT_NAMES[lang][document_type]
+    reason = route_reason(result.facts, document_type, lang)
     key_points = "\n".join(f"- {point}" for point in text.key_points)
-    to_fill = " ".join(f"`{placeholder}`" for placeholder in result.to_fill)
+    to_fill = " ".join(f"`{localize_placeholders(p, lang)}`" for p in result.to_fill)
     steps = NEXT_STEPS[lang][document_type]
     next_steps = "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
     return (
-        f"**{t('document_type', lang)}: {name}.** {text.reason}\n\n"
+        f"**{t('document_type', lang)}: {name}.** {reason}\n\n"
         f"### {t('summary', lang)}\n{text.summary}\n\n"
         f"### {t('key_points', lang)}\n{key_points}\n\n"
         f"### {t('to_fill', lang)}\n{to_fill}\n\n"
@@ -103,23 +106,22 @@ def explanation_markdown(result: CaseResult, lang: str, text: ExplanationText) -
 
 
 def translate(result: CaseResult, spanish: ExplanationText, lang: str) -> dict | None:
-    """Translate the case texts and the document once; None if the translation failed."""
+    """Translate the case-specific texts once (Nano); None if the translation failed."""
     target = config.LANGUAGES[lang]
     try:
         with st.spinner(t("translating")):
             explanation, metrics = run_translate_explanation(spanish, target)
             st.session_state.translation_metrics += metrics
-            document, metrics = run_translate_document(result.draft.body_markdown, target)
+            sections, metrics = run_translate_sections(result.draft.sections, target)
             st.session_state.translation_metrics += metrics
     except LLMError:
         return None
-    return {"explanation": explanation, "document": document}
+    return {"explanation": explanation, "sections": sections}
 
 
 def localized(result: CaseResult) -> dict[str, str]:
     """Explanation and document in the chosen language; translated once and then cached."""
     spanish = ExplanationText(
-        reason=result.route.reason,
         summary=result.explanation.summary,
         key_points=result.explanation.key_points,
     )
@@ -130,9 +132,13 @@ def localized(result: CaseResult) -> dict[str, str]:
             st.session_state.translations[lang] = translate(result, spanish, lang)
         translated = st.session_state.translations[lang]
         if translated:
+            # Fixed parts are hand-written in `lang`; only the sections come from Nano.
+            document = build_document(
+                result.route.document_type, result.facts, translated["sections"], lang
+            )
             return {
                 "explanation": explanation_markdown(result, lang, translated["explanation"]),
-                "document": translated["document"],
+                "document": localize_placeholders(document, lang),
             }
         st.warning(t("translation_error"))
     es = config.SOURCE_LANGUAGE
@@ -176,11 +182,11 @@ def show_metrics(result: CaseResult, texts: dict[str, str]) -> None:
     metrics = result.metrics + st.session_state.translation_metrics
     rows = [
         {
-            "step": m.step,
-            "model": m.model,
-            "prompt_tokens": m.prompt_tokens,
-            "completion_tokens": m.completion_tokens,
-            "latency_s": round(m.latency_s, 2),
+            t("col_step"): m.step,
+            t("col_model"): m.model,
+            t("col_prompt_tokens"): m.prompt_tokens,
+            t("col_completion_tokens"): m.completion_tokens,
+            t("col_latency"): round(m.latency_s, 2),
         }
         for m in metrics
     ]

@@ -19,7 +19,15 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class LLMError(Exception):
-    """Raised with a message that is safe to show to the user."""
+    """Raised with a message that is safe to show to the user.
+
+    `code` names the kind of error, so the app can show a hand-written message in the
+    user's language (src/ui_text.py, key "error_<code>").
+    """
+
+    def __init__(self, message: str, code: str = "generic") -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass
@@ -37,7 +45,9 @@ class CallMetrics:
 def _client() -> openai.OpenAI:
     """Build the OpenAI-compatible client for Token Factory (retries + timeout built in)."""
     if not config.NEBIUS_API_KEY or not config.NEBIUS_BASE_URL:
-        raise LLMError("Nebius is not configured: set NEBIUS_API_KEY and NEBIUS_BASE_URL.")
+        raise LLMError(
+            "Nebius is not configured: set NEBIUS_API_KEY and NEBIUS_BASE_URL.", "config"
+        )
     return openai.OpenAI(
         api_key=config.NEBIUS_API_KEY,
         base_url=config.NEBIUS_BASE_URL,
@@ -70,7 +80,9 @@ def chat(
         return text, metrics
 
     if not model:
-        raise LLMError(f"No model configured for step '{step}'. Check the model IDs in .env.")
+        raise LLMError(
+            f"No model configured for step '{step}'. Check the model IDs in .env.", "config"
+        )
     try:
         response = _client().chat.completions.create(
             model=model,
@@ -80,9 +92,9 @@ def chat(
             extra_body={"chat_template_kwargs": {"enable_thinking": thinking}},
         )
     except openai.APITimeoutError as exc:
-        raise LLMError("The model took too long to answer. Please try again.") from exc
+        raise LLMError("The model took too long to answer.", "timeout") from exc
     except openai.APIConnectionError as exc:
-        raise LLMError("Could not reach Nebius Token Factory. Check your connection.") from exc
+        raise LLMError("Could not reach Nebius Token Factory.", "connection") from exc
     except openai.APIStatusError as exc:
         raise LLMError(f"Nebius returned an error (HTTP {exc.status_code}).") from exc
 
@@ -138,4 +150,6 @@ def chat_json(
                 {"role": "assistant", "content": text},
                 {"role": "user", "content": f"Invalid JSON: {exc}. Answer only with valid JSON."},
             ]
-    raise LLMError(f"The model returned an invalid answer in step '{step}'. Please try again.")
+    raise LLMError(
+        f"The model returned an invalid answer in step '{step}'. Please try again.", "invalid"
+    )

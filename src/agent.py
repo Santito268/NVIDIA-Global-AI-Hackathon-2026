@@ -25,17 +25,56 @@ URL_PATTERN = re.compile(r"https?://[^\s)\]>]+")
 REMOVED_URL_NOTE = "[enlace eliminado: no proviene de una fuente verificada]"
 QUOTE_PATTERN = re.compile(r"«([^«»]+)»")
 REMOVED_QUOTE_NOTE = "[cita eliminada: no aparece en la fuente]"
+MIN_QUOTE_WORDS = 6  # the shortest excerpt of the legal code has 6 words
 ITEM_START_PATTERN = re.compile(r"^(?:[-*]|\d+[.)])\s")
 PLACEHOLDER_PATTERN = re.compile(r"\[[A-ZÁÉÍÓÚÑ ]+\]")
-# The title and the addressee built by src/document.py: formal names that stay in Spanish
-# (in a live test Nano misspelled the title and dropped the addressee line).
-HEADER_PATTERN = re.compile(r"(?m:^# .+$|^Señor\(a\) Juez de la República \(reparto\)$|^Señores$)")
-# Text the translation must never touch: quotes, URLs, blanks and the header. Each one is
-# swapped for a numbered token before translating and put back afterwards.
+# Text the translation must never touch: quotes, URLs and blanks. Each one is swapped for a
+# numbered token before translating and put back afterwards.
 PROTECTED_PATTERN = re.compile(
-    "|".join(p.pattern for p in (HEADER_PATTERN, QUOTE_PATTERN, URL_PATTERN, PLACEHOLDER_PATTERN))
+    "|".join(p.pattern for p in (QUOTE_PATTERN, URL_PATTERN, PLACEHOLDER_PATTERN))
 )
 TOKEN_PATTERN = re.compile(r"⟦\d+⟧")
+SECTION_MARKER_PATTERN = re.compile(r"^⟦S(\d+)⟧[ \t]*$", re.MULTILINE)
+
+# Why the document fits the case: hand-written in every language, chosen by route_case's rule.
+ROUTE_REASONS: dict[str, dict[str, str]] = {
+    "es": {
+        "tutela": "Procede la tutela porque {reasons}.",
+        "special": "el paciente es sujeto de especial protección constitucional{group}",
+        "urgent": "la demora pone en riesgo inminente la salud o la vida del paciente",
+        "and": " y ",
+        "derecho_de_peticion": (
+            "Procede el derecho de petición porque no hay un riesgo inminente para la salud: "
+            "primero se le pide a la EPS una respuesta formal y de fondo."
+        ),
+    },
+    "en": {
+        "tutela": "A tutela is the right document because {reasons}.",
+        "special": "the patient is a subject of special constitutional protection{group}",
+        "urgent": "the delay puts the patient's health or life at imminent risk",
+        "and": " and ",
+        "derecho_de_peticion": (
+            "A derecho de petición is the right document because there is no imminent risk "
+            "to health: first, the EPS is asked for a formal answer on the merits."
+        ),
+    },
+}
+PROTECTION_GROUPS: dict[str, dict[str, str]] = {
+    "es": {
+        "child": "menor de edad",
+        "older_adult": "adulto mayor",
+        "disability": "persona con discapacidad",
+        "pregnancy": "mujer embarazada",
+        "serious_illness": "persona con una enfermedad grave",
+    },
+    "en": {
+        "child": "a child or adolescent",
+        "older_adult": "an older adult",
+        "disability": "a person with a disability",
+        "pregnancy": "a pregnant woman",
+        "serious_illness": "a person with a serious illness",
+    },
+}
 
 # Fixed, hand-written next steps per language: deadlines are legal facts, so the model never
 # writes or translates them. Every legal statement is in the verified mini legal code
@@ -126,23 +165,27 @@ def route_case(facts: CaseFacts) -> RouteDecision:
     special constitutional protection; otherwise a derecho de petición. A model call here
     flipped its answer in the evaluation set (D37), so the rule is applied by code.
     """
+    tutela = facts.special_protection or facts.urgent_health_risk
+    document_type = "tutela" if tutela else "derecho_de_peticion"
+    return RouteDecision(
+        document_type=document_type,
+        reason=route_reason(facts, document_type, config.SOURCE_LANGUAGE),
+    )
+
+
+def route_reason(facts: CaseFacts, document_type: str, lang: str) -> str:
+    """The hand-written reason for the chosen document, in `lang`."""
+    texts = ROUTE_REASONS[lang]
+    if document_type != "tutela":
+        return texts[document_type]
     reasons = []
     if facts.special_protection:
-        who = f" ({facts.special_protection_reason})" if facts.special_protection_reason else ""
-        reasons.append(f"el paciente es sujeto de especial protección constitucional{who}")
+        group = facts.special_protection_group
+        name = f" ({PROTECTION_GROUPS[lang][group]})" if group else ""
+        reasons.append(texts["special"].format(group=name))
     if facts.urgent_health_risk:
-        reasons.append("la demora pone en riesgo inminente la salud o la vida del paciente")
-    if reasons:
-        return RouteDecision(
-            document_type="tutela", reason=f"Procede la tutela porque {' y '.join(reasons)}."
-        )
-    return RouteDecision(
-        document_type="derecho_de_peticion",
-        reason=(
-            "Procede el derecho de petición porque no hay un riesgo inminente para la salud: "
-            "primero se le pide a la EPS una respuesta formal y de fondo."
-        ),
-    )
+        reasons.append(texts["urgent"])
+    return texts["tutela"].format(reasons=texts["and"].join(reasons))
 
 
 def run_research(
@@ -193,7 +236,11 @@ def remove_unverified_quotes(text: str, sources: list[Source]) -> str:
 
     def check(match: re.Match) -> str:
         quote = _normalize(match.group(1))
-        if quote and any(quote in k for k in known):
+        # A live test kept «... insulina glargina ...»: two words found in a snippet prove
+        # nothing. A quote must be a real sentence fragment, with no gaps inside.
+        long_enough = len(quote.split()) >= MIN_QUOTE_WORDS
+        no_gaps = "…" not in quote and "..." not in quote
+        if long_enough and no_gaps and any(quote in k for k in known):
             return match.group(0)
         return REMOVED_QUOTE_NOTE
 
@@ -252,17 +299,19 @@ def run_draft(
         if sections:
             break
     if not sections:
-        raise LLMError("The model returned an incomplete document. Please try again.")
+        raise LLMError("The model returned an incomplete document.", "incomplete")
 
-    checked = {
-        heading: drop_items_with_removed_quotes(remove_unverified_quotes(content, sources))
-        for heading, content in sections.items()
-    }
-    body, cited = remove_unverified_urls(
-        build_document(route.document_type, facts, checked), sources
-    )
+    checked: dict[str, str] = {}
+    cited: list[str] = []
+    for heading, content in sections.items():
+        content = drop_items_with_removed_quotes(remove_unverified_quotes(content, sources))
+        checked[heading], urls = remove_unverified_urls(content, sources)
+        cited += [url for url in urls if url not in cited]
     draft = DraftDocument(
-        title=DOCUMENT_TITLES[route.document_type], body_markdown=body, cited_urls=cited
+        title=DOCUMENT_TITLES[route.document_type],
+        body_markdown=build_document(route.document_type, facts, checked),
+        sections=checked,
+        cited_urls=cited,
     )
     return draft, all_metrics
 
@@ -305,26 +354,35 @@ def restore(text: str, originals: list[str]) -> str:
     return text
 
 
-def run_translate_document(text: str, language: str) -> tuple[str, list[CallMetrics]]:
-    """Translate the Spanish document into `language` (e.g. "English") with Nano.
+def run_translate_sections(
+    sections: dict[str, str], language: str
+) -> tuple[dict[str, str], list[CallMetrics]]:
+    """Translate only the model's sections into `language` (e.g. "English"), in one Nano call.
 
-    Quotes, URLs and blanks never reach the model: they are protected with tokens.
+    The fixed parts are hand-written per language (src/document.py), so they never reach the
+    model. Quotes, URLs and blanks are protected with tokens; each section starts with a
+    marker ⟦S1⟧, ⟦S2⟧... so the answer can be split back into the same sections.
     """
-    protected, originals = protect(text)
+    headings = list(sections)
+    joined = "\n\n".join(f"⟦S{i}⟧\n{sections[h]}" for i, h in enumerate(headings, 1))
+    protected, originals = protect(joined)
     messages = [
-        {"role": "system", "content": prompts.TRANSLATE_DOCUMENT_SYSTEM.format(language=language)},
+        {"role": "system", "content": prompts.TRANSLATE_SECTIONS_SYSTEM.format(language=language)},
         {"role": "user", "content": protected},
     ]
     translation, metrics = chat(
         messages,
         config.NANO_MODEL,
-        "translate_document",
+        "translate_sections",
         thinking=False,
         max_tokens=config.DRAFT_MAX_TOKENS,
     )
-    if not translation:
-        raise LLMError("The translation came back empty. Please try again.")
-    return restore(translation, originals), [metrics]
+    parts = SECTION_MARKER_PATTERN.split(restore(translation, originals))
+    # split() gives [text before ⟦S1⟧, "1", section 1, "2", section 2, ...]
+    numbers, texts = parts[1::2], parts[2::2]
+    if numbers != [str(i) for i in range(1, len(headings) + 1)]:
+        raise LLMError("The translation lost a section. Showing the Spanish version.")
+    return {h: text.strip() for h, text in zip(headings, texts, strict=True)}, [metrics]
 
 
 def run_translate_explanation(
