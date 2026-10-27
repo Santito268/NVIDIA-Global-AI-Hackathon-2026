@@ -13,6 +13,8 @@ from src.tools import search_web
 DOCUMENT_TITLES = {"tutela": "Acción de tutela", "derecho_de_peticion": "Derecho de petición"}
 URL_PATTERN = re.compile(r"https?://[^\s)\]>]+")
 REMOVED_URL_NOTE = "[enlace eliminado: no proviene de una fuente verificada]"
+QUOTE_PATTERN = re.compile(r"«([^«»]+)»")
+REMOVED_QUOTE_NOTE = "[cita eliminada: no aparece en la fuente]"
 
 
 @dataclass
@@ -91,6 +93,25 @@ def remove_unverified_urls(text: str, sources: list[Source]) -> tuple[str, list[
     return URL_PATTERN.sub(check, text), cited
 
 
+def _normalize(text: str) -> str:
+    """Compare quotes ignoring case, extra spaces and edge punctuation or ellipses."""
+    return " ".join(text.split()).casefold().strip(" .,;:…")
+
+
+def remove_unverified_quotes(text: str, sources: list[Source]) -> str:
+    """Replace every «quote» that is not copied word for word from a snippet or the legal code."""
+    known = [_normalize(s.snippet) for s in sources]
+    known += [_normalize(e) for e in legal.corpus_excerpts()]
+
+    def check(match: re.Match) -> str:
+        quote = _normalize(match.group(1))
+        if quote and any(quote in k for k in known):
+            return match.group(0)
+        return REMOVED_QUOTE_NOTE
+
+    return QUOTE_PATTERN.sub(check, text)
+
+
 def run_draft(
     facts: CaseFacts, route: RouteDecision, sources: list[Source]
 ) -> tuple[DraftDocument, list[CallMetrics]]:
@@ -116,7 +137,7 @@ def run_draft(
     if not text:
         raise LLMError("The model returned an empty document. Please try again.")
 
-    body, cited = remove_unverified_urls(text, sources)
+    body, cited = remove_unverified_urls(remove_unverified_quotes(text, sources), sources)
     draft = DraftDocument(
         title=DOCUMENT_TITLES[route.document_type], body_markdown=body, cited_urls=cited
     )

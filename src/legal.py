@@ -18,6 +18,11 @@ def corpus_urls() -> set[str]:
     return {source["url"] for source in load_corpus()["sources"].values()}
 
 
+def corpus_excerpts() -> list[str]:
+    """Verbatim official excerpts of the corpus; the draft may quote them."""
+    return [e for entry in load_corpus()["articles"] for e in entry["excerpts"]]
+
+
 def format_for_prompt() -> str:
     """Render the articles grouped by norm (URL once per norm) so the model can read and cite."""
     corpus = load_corpus()

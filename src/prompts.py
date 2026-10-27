@@ -66,14 +66,16 @@ Start with the line "Señor(a) Juez de la República (reparto)". Then:
    - If facts.writer_is_affected_person is false: the accionante acts as AGENTE OFICIOSO of
      the affected person, written as [NOMBRE DEL PACIENTE], identificado(a) con cédula
      [CÉDULA DEL PACIENTE], and states expressly why that person cannot promote their own
-     defense (artículo 10 del Decreto 2591 de 1991). Write the Hechos about "el paciente",
+     defense (artículo 10 del Decreto 2591 de 1991). Use the reason only if the case data
+     states it; age alone is not a reason. Otherwise write
+     [RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR]. Write the Hechos about "el paciente",
      not about the accionante.
    - Accionada: the EPS name from the facts, or [NOMBRE DE LA EPS] if it is unknown.
 ## Hechos (numbered facts, only from the case data)
 ## Derechos fundamentales vulnerados o amenazados
 ## Pretensiones (exactly what the judge is asked to order, with a deadline)
 ## Fundamentos de derecho
-## Pruebas y anexos (documents the citizen should attach)
+## Pruebas y anexos (only from the ANNEX LIST below)
 ## Juramento (under oath, no other tutela has been filed for the same facts and rights)
 ## Notificaciones ([DIRECCIÓN], [CORREO ELECTRÓNICO], [TELÉFONO])
 ## Firma ([FIRMA], [NOMBRE], [CÉDULA])
@@ -86,21 +88,44 @@ Start with the line "Señores [NOMBRE DE LA EPS]" (or the EPS name from the fact
 ## Hechos (numbered facts, only from the case data)
 ## Peticiones (exactly what the EPS is asked to do)
 ## Fundamentos de derecho
-## Anexos (documents the citizen should attach)
+## Anexos (only from the ANNEX LIST below)
 ## Notificaciones ([DIRECCIÓN], [CORREO ELECTRÓNICO], [TELÉFONO])
 ## Firma ([FIRMA], [NOMBRE], [CÉDULA])
 
 Placeholders: use ONLY these, written exactly like this: [NOMBRE], [CÉDULA],
 [CIUDAD DE RESIDENCIA], [DIRECCIÓN], [CORREO ELECTRÓNICO], [TELÉFONO], [FIRMA],
-[NOMBRE DE LA EPS], [NOMBRE DEL PACIENTE], [CÉDULA DEL PACIENTE]. Never invent new ones.
+[NOMBRE DE LA EPS], [NOMBRE DEL PACIENTE], [CÉDULA DEL PACIENTE],
+[RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR]. Never invent new ones.
+
+ANNEX LIST (always include the first and the last; add the others when they apply):
+- Copia de la fórmula u orden médica.
+- Copia de la historia clínica.
+- Copia de la solicitud presentada a la EPS (si existe).
+- Copia de la respuesta o negativa de la EPS (si existe).
+- Copia de la cédula de ciudadanía del accionante (and of the patient, if acting as agente
+  oficioso).
+
+What to ask for (Pretensiones / Peticiones):
+- Ask ONLY for what the case needs: deliver the medicine, authorize the procedure or schedule
+  the appointment within a deadline, and guarantee the continuity of the treatment.
+- Never ask for costas, indemnizaciones, sanciones or anything else.
 
 Rules for legal grounds (very important):
 - Laws and constitutional articles may ONLY come from the LEGAL CODE provided. Cite them with
   their article number and the name of the norm, and you may add the URL given there.
   Follow each article's "Uso" note strictly: never use an article for something its "Uso"
-  does not say. Never cite any other law, decree or article.
+  does not say. The "Uso" notes are private guidance: never copy them into the document.
+  Never cite any other law, decree or article.
+- Cite constitutional articles as "artículo 49 de la Constitución Política" (short form
+  "C.P.", never "CN").
 - Court rulings (sentencias) may ONLY be cited if they appear in the SOURCES provided, with
-  their title and exact URL. Use their snippets only for what they actually say.
+  their title and exact URL. If SOURCES include rulings related to the case, cite between 1
+  and 3 of them in Fundamentos de derecho, like this:
+  En la Sentencia T-000/25 (URL) se lee: «one sentence copied word for word from its snippet».
+  Never describe in your own words what the Court decided or ordered: a snippet is only a
+  fragment and may come from the facts of that case, not from its decision.
+- Any text between « » must be copied word for word from a snippet or from the "Texto
+  oficial" of the LEGAL CODE. Quotes that are not exact will be removed.
 - Never invent rulings, article numbers, quotes or URLs.
 - In an urgent case, ask the judge for a medida provisional (artículo 7 del Decreto 2591 de
   1991) in the Pretensiones.
@@ -109,5 +134,6 @@ Other rules:
 - Never write real personal data; always use the placeholders above.
 - Do not use facts that are not in the case data.
 - Use correct, formal Colombian legal Spanish (e.g. "suministro" of a medicine, "radicar"
-  a document). Re-read the document and fix wrong or invented words before answering.
+  a document, "agente oficioso"). Re-read the document and fix wrong or invented words
+  before answering.
 - Answer ONLY with the document, starting with its title."""

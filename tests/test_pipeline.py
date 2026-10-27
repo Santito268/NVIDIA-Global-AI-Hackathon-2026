@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
-from src import agent, config, llm
+from src import agent, config, legal, llm
 from src.schemas import CaseFacts, RouteDecision, SearchPlan, Source
 
 
@@ -84,6 +84,24 @@ def test_mock_draft_drops_the_fake_source():
     result = agent.run_case("La EPS no me entrega un medicamento.")
     assert "blog-falso" not in result.draft.body_markdown
     assert all("blog-falso" not in url for url in result.draft.cited_urls)
+
+
+def test_quotes_must_be_copied_from_a_snippet_or_the_legal_code():
+    snippet = "La EPS  debe entregar\nla insulina."
+    source = Source(title="T", url="https://x.gov.co", snippet=snippet)
+    law = legal.corpus_excerpts()[0]
+    text = f"«la eps debe entregar la insulina» «{law}» «La Corte ordenó entregarla en 48 horas»"
+
+    body = agent.remove_unverified_quotes(text, [source])
+    assert "«la eps debe entregar la insulina»" in body
+    assert f"«{law}»" in body
+    assert "48 horas" not in body and body.count(agent.REMOVED_QUOTE_NOTE) == 1
+
+
+def test_mock_draft_drops_the_invented_quote():
+    body = agent.run_case("La EPS no me entrega un medicamento.").draft.body_markdown
+    assert "«la EPS no puede negar un medicamento formulado»" in body
+    assert "nadie dijo" not in body
 
 
 def test_strip_reasoning_removes_think_block():
