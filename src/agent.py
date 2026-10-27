@@ -134,7 +134,13 @@ def run_intake(description: str) -> tuple[CaseFacts, list[CallMetrics]]:
         {"role": "system", "content": prompts.INTAKE_SYSTEM},
         {"role": "user", "content": description},
     ]
-    return chat_json(messages, config.NANO_MODEL, "intake", CaseFacts, thinking=False)
+    facts, metrics = chat_json(messages, config.NANO_MODEL, "intake", CaseFacts, thinking=False)
+    # Nano once answered writer_relationship "hija" together with writer_is_affected_person
+    # true (eval case 02). A relationship means someone writes for another person, by the
+    # prompt's own rule, so code settles the contradiction.
+    if facts.writer_relationship and facts.writer_is_affected_person:
+        facts = facts.model_copy(update={"writer_is_affected_person": False})
+    return facts, metrics
 
 
 def route_case(facts: CaseFacts) -> RouteDecision:
@@ -228,14 +234,17 @@ def run_draft(
 
     checked: dict[str, str] = {}
     cited: list[str] = []
+    removed_quotes = 0
     for heading, content in sections.items():
-        checked[heading], urls = check_section(content, sources)
+        checked[heading], urls, removed = check_section(content, sources)
+        removed_quotes += removed
         cited += [url for url in urls if url not in cited]
     draft = DraftDocument(
         title=DOCUMENT_NAMES[config.SOURCE_LANGUAGE][route.document_type],
         body_markdown=build_document(route.document_type, facts, checked),
         sections=checked,
         cited_urls=cited,
+        removed_quotes=removed_quotes,
     )
     return draft, all_metrics
 

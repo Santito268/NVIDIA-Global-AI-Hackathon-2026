@@ -74,3 +74,5 @@ class DraftDocument(BaseModel):
     # The model's checked sections, keyed by Spanish heading: the only parts ever translated.
     sections: dict[str, str] = Field(default_factory=dict)
     cited_urls: list[str] = Field(default_factory=list)
+    # Quotes the filter removed (not copied word for word); measured by the evaluation set.
+    removed_quotes: int = 0

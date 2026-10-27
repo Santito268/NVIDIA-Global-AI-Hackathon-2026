@@ -80,10 +80,12 @@ def drop_items_with_removed_quotes(text: str) -> str:
     return "\n".join(line for block in kept for line in block)
 
 
-def check_section(text: str, sources: list[Source]) -> tuple[str, list[str]]:
-    """All the checks for one section of the draft; return the clean text and the URLs kept."""
-    text = drop_items_with_removed_quotes(remove_unverified_quotes(text, sources))
-    return remove_unverified_urls(text, sources)
+def check_section(text: str, sources: list[Source]) -> tuple[str, list[str], int]:
+    """All the checks for one section of the draft: clean text, URLs kept, quotes removed."""
+    text = remove_unverified_quotes(text, sources)
+    removed = text.count(REMOVED_QUOTE_NOTE)  # measured by the evaluation set
+    text, urls = remove_unverified_urls(drop_items_with_removed_quotes(text), sources)
+    return text, urls, removed
 
 
 def find_placeholders(text: str) -> list[str]:

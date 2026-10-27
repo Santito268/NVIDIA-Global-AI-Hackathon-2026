@@ -286,6 +286,11 @@ def test_mock_draft_drops_the_invented_quote():
     assert verify.REMOVED_QUOTE_NOTE not in body
 
 
+def test_draft_counts_the_quotes_the_filter_removed():
+    draft = agent.run_case("La EPS no me entrega un medicamento.").draft
+    assert draft.removed_quotes == 1  # the mock invents exactly one quote
+
+
 def test_items_with_a_removed_quote_are_dropped_whole():
     note = verify.REMOVED_QUOTE_NOTE
     text = (
@@ -338,6 +343,13 @@ def _facts() -> CaseFacts:
         special_protection=False,
         writer_is_affected_person=True,
     )
+
+
+def test_intake_contradiction_is_settled_by_code(monkeypatch):
+    answer = _facts().model_copy(update={"writer_relationship": "hija"})
+    monkeypatch.setattr(agent, "chat_json", lambda *a, **k: (answer, []))
+    facts, _ = agent.run_intake("Mi hija tiene 5 años...")
+    assert facts.writer_is_affected_person is False  # someone writes on her behalf
 
 
 def test_intake_requires_the_model_to_say_who_writes():

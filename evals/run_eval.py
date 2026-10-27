@@ -84,6 +84,8 @@ def summary_markdown(grades: list[dict]) -> str:
         f"{with_rulings}/{total} documents cite at least one Constitutional Court ruling.",
     ]
     if ok:
+        removed = sum(g.get("quotes_removed", 0) for g in ok)  # older results lack it
+        lines.append(f"The quote filter removed {removed} quotes that were not exact copies.")
         tokens = sum(g["tokens"] for g in ok) / len(ok)
         seconds = sum(g["latency_s"] for g in ok) / len(ok)
         lines.append(f"Average per case: {tokens:,.0f} tokens and {seconds:.1f} s of model time.")
