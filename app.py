@@ -23,11 +23,9 @@ from src.tools import SearchError
 from src.ui_text import DOCUMENT_NAMES, UI_TEXT
 
 ROOT = Path(__file__).resolve().parent
-SAMPLES = {
-    "sample": ROOT / "data" / "samples" / "caso_01.txt",
-    "sample_2": ROOT / "data" / "samples" / "caso_02.txt",
-    "sample_3": ROOT / "data" / "samples" / "caso_03.txt",
-}
+SAMPLES_DIR = ROOT / "data" / "samples"
+# Button key -> file name. Each case has a hand-written copy per language (caso_01_en.txt).
+SAMPLES = {"sample": "caso_01", "sample_2": "caso_02", "sample_3": "caso_03"}
 EVAL_RESULTS = ROOT / "evals" / "results.json"
 REPO_URL = "https://github.com/Santito268/NVIDIA-Global-AI-Hackathon-2026"
 # Pipeline steps shown while a case runs, with the model that does each one.
@@ -90,8 +88,36 @@ def eval_score() -> str:
     return f"{sum(g.get('passed', False) for g in grades)}/{len(grades)}"
 
 
+@st.cache_data
+def sample_text(key: str, lang: str) -> str:
+    """Example case as written by hand in `lang` (Spanish has no suffix)."""
+    suffix = "" if lang == config.SOURCE_LANGUAGE else f"_{lang}"
+    return (SAMPLES_DIR / f"{SAMPLES[key]}{suffix}.txt").read_text(encoding="utf-8").strip()
+
+
+def find_sample(text: str) -> str | None:
+    """Key of the example case `text` is (in any language), or None if the user wrote it."""
+    for key in SAMPLES:
+        if any(text == sample_text(key, lang) for lang in config.LANGUAGES):
+            return key
+    return None
+
+
 def load_sample(key: str) -> None:
-    st.session_state.description = SAMPLES[key].read_text(encoding="utf-8").strip()
+    st.session_state.description = sample_text(key, language())
+
+
+def show_sample_in_language() -> None:
+    """After a language switch, an untouched example follows the new language."""
+    key = find_sample(st.session_state.description)
+    if key:
+        st.session_state.description = sample_text(key, language())
+
+
+def text_to_process(description: str) -> str:
+    """The pipeline works in Spanish: an untouched example is sent as its Spanish original."""
+    key = find_sample(description)
+    return sample_text(key, config.SOURCE_LANGUAGE) if key else description
 
 
 def show_stepper(placeholder, current: int) -> None:
@@ -294,6 +320,7 @@ def show_case_form() -> None:
         )
     if t("input_language_note"):
         st.caption(t("input_language_note"))
+    show_sample_in_language()  # must run before the text area is drawn
     st.text_area(
         t("input_label"),
         key="description",
@@ -320,7 +347,7 @@ def show_case_form() -> None:
             st.warning(t("daily_limit_reached"))
         elif not description:
             st.error(t("empty_input"))
-        elif generate(description):
+        elif generate(text_to_process(description)):
             st.toast(t("status_done"), icon="✅")
             st.rerun()  # redraw so the case counter and the results update together
 

@@ -147,12 +147,13 @@ UI_TEXT: dict[str, dict[str, str]] = {
         "sample_3": "🩺 Dermatology appointment",
         "input_label": "What happened with your EPS?",
         "input_placeholder": (
-            "Ejemplo: A mi papá de 72 años le formularon insulina hace tres semanas y la EPS "
-            "no se la ha entregado..."
+            "Example: My 72-year-old father was prescribed insulin three weeks ago and the EPS "
+            "has not delivered it..."
         ),
         "input_language_note": (
-            "The app works in Spanish, the language of Colombian courts. Try an example, or "
-            "write in Spanish."
+            "The document is written in Spanish, the language of Colombian courts. The examples "
+            "are shown in English and the app sends their Spanish original. If you write your "
+            "own case, please write it in Spanish."
         ),
         "generate_button": "Generate my document",
         "empty_input": "Describe what happened with your EPS before generating the document.",

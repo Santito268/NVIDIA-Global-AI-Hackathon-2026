@@ -51,6 +51,36 @@ def test_sample_case_produces_the_four_tabs():
     assert len(at.dataframe) == 1
 
 
+def test_examples_are_shown_in_english_but_processed_in_spanish(monkeypatch):
+    received = []
+    real_run_case = agent.run_case
+
+    def recording_run_case(description, **kwargs):
+        received.append(description)
+        return real_run_case(description, **kwargs)
+
+    monkeypatch.setattr(agent, "run_case", recording_run_case)
+    at = _app()
+    at.button(key="sample_2").click().run()
+    assert "Mi hija" in at.text_area(key="description").value
+
+    at.segmented_control(key="language").set_value("en").run()
+    assert "My daughter" in at.text_area(key="description").value  # follows the language
+    at.button(key="generate").click().run()
+    assert received[0].startswith("Mi hija")  # the pipeline gets the Spanish original
+
+    at.segmented_control(key="language").set_value("es").run()
+    assert "Mi hija" in at.text_area(key="description").value
+
+
+def test_every_example_has_a_hand_written_copy_in_every_language():
+    samples = APP_PATH.parent / "data" / "samples"
+    for name in ("caso_01", "caso_02", "caso_03"):
+        for lang in config.LANGUAGES:
+            suffix = "" if lang == config.SOURCE_LANGUAGE else f"_{lang}"
+            assert (samples / f"{name}{suffix}.txt").read_text(encoding="utf-8").strip()
+
+
 def test_empty_description_shows_an_error_and_spends_nothing():
     at = _app()
     at.button(key="generate").click().run()
