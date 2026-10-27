@@ -1,0 +1,162 @@
+{
+  "description": "Curated official legal texts for health tutelas and petitions in Colombia. Excerpts are verbatim from Función Pública's Gestor Normativo and are checked by scripts/verify_legal_corpus.py (verbatim + not declared inexequible). Reproduction allowed by Ley 23 de 1982, art. 41.",
+  "verified_on": "2026-10-26",
+  "sources": {
+    "constitucion": {"name": "Constitución Política de Colombia de 1991", "page_id": "4125", "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=4125"},
+    "decreto_2591": {"name": "Decreto 2591 de 1991 (acción de tutela)", "page_id": "5304", "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=5304"},
+    "ley_1755": {"name": "Ley 1755 de 2015 (derecho de petición)", "page_id": "65334", "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=65334"},
+    "ley_1751": {"name": "Ley 1751 de 2015 (Ley Estatutaria de Salud)", "page_id": "60733", "url": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=60733"}
+  },
+  "articles": [
+    {
+      "source": "constitucion", "article": 11, "title": "Derecho a la vida",
+      "use": "El derecho a la vida es un derecho fundamental que puede invocarse en la tutela cuando la falta de atención en salud pone en riesgo la vida.",
+      "excerpts": ["El derecho a la vida es inviolable."]
+    },
+    {
+      "source": "constitucion", "article": 13, "title": "Igualdad y protección especial",
+      "use": "Fundamenta la protección reforzada de personas en debilidad manifiesta por su condición económica, física o mental.",
+      "excerpts": ["El Estado protegerá especialmente a aquellas personas que por su condición económica, física o mental, se encuentren en circunstancia de debilidad manifiesta y sancionará los abusos o maltratos que contra ellas se cometan."]
+    },
+    {
+      "source": "constitucion", "article": 23, "title": "Derecho de petición",
+      "use": "Base constitucional del derecho de petición, también ante organizaciones privadas como las EPS. Úsalo en derechos de petición.",
+      "excerpts": ["Toda persona tiene derecho a presentar peticiones respetuosas a las autoridades por motivos de interés general o particular y a obtener pronta resolución. El legislador podrá reglamentar su ejercicio ante organizaciones privadas para garantizar los derechos fundamentales."]
+    },
+    {
+      "source": "constitucion", "article": 44, "title": "Derechos fundamentales de los niños",
+      "use": "Para niños, niñas y adolescentes: la salud y la seguridad social son derechos fundamentales y prevalecen.",
+      "excerpts": ["Son derechos fundamentales de los niños: la vida, la integridad física, la salud y la seguridad social"]
+    },
+    {
+      "source": "constitucion", "article": 46, "title": "Protección a las personas de la tercera edad",
+      "use": "Para adultos mayores: el Estado debe protegerlos y garantizarles la seguridad social integral.",
+      "excerpts": ["El Estado, la sociedad y la familia concurrirán para la protección y la asistencia de las personas de la tercerá edad", "El Estado les garantizará los servicios de la seguridad social integral"]
+    },
+    {
+      "source": "constitucion", "article": 47, "title": "Atención especializada a personas con discapacidad",
+      "use": "Para personas con discapacidad física, sensorial o psíquica: derecho a la atención especializada que requieran.",
+      "excerpts": ["El Estado adelantará una política de previsión, rehabilitación e integración social para los disminuidos fisicos, sensoriales y psiquicos, a quienes se prestará la atención especializada que requieran."]
+    },
+    {
+      "source": "constitucion", "article": 48, "title": "Seguridad social",
+      "use": "La seguridad social es un servicio público obligatorio y un derecho irrenunciable; puede prestarse por entidades privadas (como las EPS).",
+      "excerpts": ["La Seguridad Social es un servicio público de carácter obligatorio que se prestará bajo la dirección, coordinación y control del Estado", "Se garantiza a todos los habitantes el derecho irrenunciable a la Seguridad Social.", "La Seguridad Social podrá ser prestada por entidades públicas o privadas, de conformidad con la ley."]
+    },
+    {
+      "source": "constitucion", "article": 49, "title": "Atención en salud",
+      "use": "Garantiza a todas las personas el acceso a los servicios de salud. Es la base constitucional del derecho a la salud.",
+      "excerpts": ["La atención de la salud y el saneamiento ambiental son servicios públicos a cargo del Estado. Se garantiza a todas las personas el acceso a los servicios de promoción, protección y recuperación de la salud."]
+    },
+    {
+      "source": "constitucion", "article": 86, "title": "Acción de tutela",
+      "use": "Crea la tutela como MECANISMO para proteger derechos fundamentales. No es un derecho vulnerado: nunca lo cites como derecho afectado. Permite presentarla por otra persona y prevé tutela contra particulares que prestan servicios públicos.",
+      "excerpts": ["Toda persona tendra acción de tutela para reclamar ante los jueces, en todo momento y lugar, mediante un procedimiento preferente y sumario, por si misma o por quien actue a su nombre, la protección inmediata de sus derechos constitucionales fundamentales", "Esta acción solo procederá cuando el afectado no disponga de otro medio de defensa judicial, salvo que aquella se utilice como mecanismo transitorio para evitar un perjuicio irremediable.", "La ley establecerá los casos en los que la acción de tutela procede contra particulares encargados de la prestación de un servicio público"]
+    },
+    {
+      "source": "decreto_2591", "article": 1, "title": "Objeto de la tutela",
+      "use": "Define la tutela y aclara que todos los días y horas son hábiles para presentarla.",
+      "excerpts": ["Toda persona tendrá acción de tutela para reclamar ante los jueces, en todo momento y lugar, mediante un procedimiento preferente y sumario, por si misma o por quien actúe a su nombre, la protección inmediata de sus derechos constitucionales fundamentales, cuando quiera que éstos resulten vulnerados o amenazados por la acción o la omisión de cualquier autoridad pública o de los particulares", "Todos los días y horas son hábiles para interponer la acción de tutela."]
+    },
+    {
+      "source": "decreto_2591", "article": 6, "title": "Causales de improcedencia",
+      "use": "La tutela no procede si hay otro medio de defensa eficaz, salvo como mecanismo transitorio para evitar un perjuicio irremediable. Ayuda a decidir entre tutela y derecho de petición.",
+      "excerpts": ["La acción de tutela no procederá:", "1. Cuando existan otros recursos o medios de defensa judiciales, salvo que aquélla se utilice como mecanismo transitorio para evitar un perjuicio irremediable. La existencia de dichos medios será apreciada en concreto, en cuanto a su eficacia, atendiendo las circunstancias en que se encuentra el solicitante."]
+    },
+    {
+      "source": "decreto_2591", "article": 7, "title": "Medidas provisionales",
+      "use": "En casos urgentes se puede pedir al juez que, desde que recibe la tutela, ordene medidas para proteger el derecho (por ejemplo, la entrega inmediata del medicamento) sin esperar el fallo.",
+      "excerpts": ["Desde la presentación de la solicitud, cuando el juez expresamente lo considere necesario y urgente para proteger el derecho, suspenderá la aplicación del acto concreto que lo amenace o vulnere.", "En todo caso el juez podrá ordenar lo que considere procedente para proteger los derechos y no hacer ilusorio el efecto de un eventual fallo a favor del solicitante."]
+    },
+    {
+      "source": "decreto_2591", "article": 8, "title": "La tutela como mecanismo transitorio",
+      "use": "Aunque exista otro medio de defensa, la tutela procede como mecanismo transitorio para evitar un perjuicio irremediable.",
+      "excerpts": ["Aun cuando el afectado disponga de otro medio de defensa judicial, la acción de tutela procederá cuando se utilice como mecanismo transitorio para evitar un perjuicio irremediable."]
+    },
+    {
+      "source": "decreto_2591", "article": 10, "title": "Legitimidad e interés (agencia oficiosa)",
+      "use": "La tutela la puede presentar la persona afectada o un representante. Un familiar puede agenciar los derechos de quien no puede defenderse por sí mismo, y debe decirlo expresamente en la tutela.",
+      "excerpts": ["La acción de tutela podrá ser ejercida, en todo momento y lugar, por cualquiera persona vulnerada o amenazada en uno de sus derechos fundamentales, quien actuará por sí misma o a través de representante.", "También se pueden agenciar derechos ajenos cuando el titular de los mismos no este en condiciones de promover su propia defensa. Cuando tal circunstancia ocurra, deberá manifestarse en la solicitud."]
+    },
+    {
+      "source": "decreto_2591", "article": 14, "title": "Contenido de la solicitud de tutela",
+      "use": "Lo que debe contener la tutela. No exige formalidades, ni citar la norma, ni abogado.",
+      "excerpts": ["En la solicitud de tutela se expresará, con la mayor claridad posible, la acción o la omisión que la motiva, el derecho que se considera violado o amenazado, el nombre de la autoridad pública, si fuere posible, o del órgano autor de la amenaza o del agravio, y la descripción de las demás circunstancias relevantes para decidir la solicitud. También contendrá el nombre y el lugar de residencia del solicitante.", "No será indispensable citar la norma constitucional infringida, siempre que se determine claramente el derecho violado o amenazado.", "No será necesario actuar por medio de apoderado."]
+    },
+    {
+      "source": "decreto_2591", "article": 29, "title": "Contenido y plazo del fallo",
+      "use": "El juez debe fallar dentro de los diez días siguientes; el plazo para cumplir la orden no puede exceder de 48 horas. Útil para la pretensión y para explicar qué esperar.",
+      "excerpts": ["Dentro de los diez días siguientes a la presentación de la solicitud el juez dictará fallo", "5. El plazo perentorio para el cumplimiento de lo resuelto, que en ningún caso podrá exceder de 48 horas."]
+    },
+    {
+      "source": "decreto_2591", "article": 37, "title": "Juramento",
+      "use": "Quien presenta la tutela debe manifestar bajo juramento que no ha presentado otra por los mismos hechos y derechos.",
+      "excerpts": ["El que interponga la acción de tutela deberá manisfestar, bajo la gravedad del juramento, que no ha presentado otra respecto de los mismos hechos y derechos."]
+    },
+    {
+      "source": "decreto_2591", "article": 42, "title": "Tutela contra particulares (EPS)",
+      "use": "Permite la tutela contra particulares que prestan el servicio público de salud, como las EPS.",
+      "excerpts": ["La acción de tutela procederá contra acciones u omisiones de particulares en los siguientes casos:", "2. Cuando contra quien se hubiere hecho la solicitud este encargado de la prestación del servicio público de salud para proteger los derechos a la vida, a la intimidad, a la igualdad y a la autonomía."]
+    },
+    {
+      "source": "ley_1755", "article": 13, "title": "Objeto del derecho de petición",
+      "use": "SOLO para derechos de petición: derecho a obtener una respuesta pronta, completa y de fondo. Esta ley NO regula la obligación de las EPS de prestar servicios de salud.",
+      "excerpts": ["Toda persona tiene derecho a presentar peticiones respetuosas a las autoridades, en los términos señalados en este código, por motivos de interés general o particular, y a obtener pronta resolución completa y de fondo sobre la misma."]
+    },
+    {
+      "source": "ley_1755", "article": 14, "title": "Términos para responder",
+      "use": "SOLO para derechos de petición: por regla general la petición debe resolverse dentro de los 15 días siguientes a su recepción.",
+      "excerpts": ["Salvo norma legal especial y so pena de sanción disciplinaria, toda petición deberá resolverse dentro de los quince (15) días siguientes a su recepción."]
+    },
+    {
+      "source": "ley_1755", "article": 16, "title": "Contenido de las peticiones",
+      "use": "SOLO para derechos de petición: contenido mínimo que debe tener la petición.",
+      "excerpts": ["Toda petición deberá contener, por lo menos:", "1. La designación de la autoridad a la que se dirige.", "3. El objeto de la petición.", "4. Las razones en las que fundamenta su petición.", "5. La relación de los documentos que desee presentar para iniciar el trámite.", "6. La firma del peticionario cuando fuere el caso."]
+    },
+    {
+      "source": "ley_1755", "article": 33, "title": "Petición ante instituciones de seguridad social",
+      "use": "SOLO para derechos de petición: las reglas del derecho de petición aplican a las instituciones del Sistema de Seguridad Social Integral, como las EPS.",
+      "excerpts": ["Sin perjuicio de lo dispuesto en leyes especiales, a las Cajas de Compensación Familiar, a las Instituciones del Sistema de Seguridad Social Integral, a las entidades que conforman el sistema financiero y bursátil y a aquellas empresas que prestan servicios públicos y servicios públicos domiciliarios, que se rijan por el derecho privado, se les aplicarán en sus relaciones con los usuarios, en lo pertinente, las disposiciones sobre derecho de petición previstas en los dos capítulos anteriores."]
+    },
+    {
+      "source": "ley_1751", "article": 2, "title": "Naturaleza del derecho fundamental a la salud",
+      "use": "La salud es un derecho fundamental autónomo; incluye el acceso oportuno, eficaz y con calidad. Es la base legal principal en tutelas de salud.",
+      "excerpts": ["El derecho fundamental a la salud es autónomo e irrenunciable en lo individual y en lo colectivo.", "Comprende el acceso a los servicios de salud de manera oportuna, eficaz y con calidad para la preservación, el mejoramiento y la promoción de la salud."]
+    },
+    {
+      "source": "ley_1751", "article": 6, "title": "Principios del derecho a la salud",
+      "use": "Principios clave contra demoras y suspensiones: continuidad (no se puede interrumpir por razones administrativas o económicas), oportunidad (sin dilaciones) y pro homine.",
+      "excerpts": ["b) Pro homine. Las autoridades y demás actores del sistema de salud, adoptarán la interpretación de las normas vigentes que sea más favorable a la protección del derecho fundamental a la salud de las personas;", "d) Continuidad. Las personas tienen derecho a recibir los servicios de salud de manera continua. Una vez la provisión de un servicio ha sido iniciada, este no podrá ser interrumpido por razones administrativas o económicas;", "e) Oportunidad. La prestación de los servicios y tecnologías de salud deben proveerse sin dilaciones;"]
+    },
+    {
+      "source": "ley_1751", "article": 8, "title": "Integralidad",
+      "use": "Los servicios deben darse completos; no se puede fragmentar la responsabilidad en perjuicio del usuario.",
+      "excerpts": ["Los servicios y tecnologías de salud deberán ser suministrados de manera completa para prevenir, paliar o curar la enfermedad", "No podrá fragmentarse la responsabilidad en la prestación de un servicio de salud específico en desmedro de la salud del usuario."]
+    },
+    {
+      "source": "ley_1751", "article": 10, "title": "Derechos de los pacientes",
+      "use": "Derechos concretos del paciente: atención oportuna, acceso oportuno a medicamentos y que no se le trasladen cargas administrativas.",
+      "excerpts": ["a) A acceder a los servicios y tecnologías de salud, que le garanticen una atención integral, oportuna y de alta calidad;", "i) A la provisión y acceso oportuno a las tecnologías y a los medicamentos requeridos;", "p) A que no se trasladen las cargas administrativas y burocráticas que les corresponde asumir a los encargados o intervinientes en la prestación del servicio;"]
+    },
+    {
+      "source": "ley_1751", "article": 11, "title": "Sujetos de especial protección en salud",
+      "use": "Niños, embarazadas, víctimas, adultos mayores, personas con enfermedades huérfanas y con discapacidad tienen especial protección; su atención no puede limitarse por restricciones administrativas o económicas.",
+      "excerpts": ["La atención de niños, niñas y adolescentes, mujeres en estado de embarazo, desplazados, víctimas de violencia y del conflicto armado, la población adulta mayor, personas que sufren de enfermedades huérfanas y personas en condición de discapacidad, gozarán de especial protección por parte del Estado. Su atención en salud no estará limitada por ningún tipo de restricción administrativa o económica."]
+    },
+    {
+      "source": "ley_1751", "article": 14, "title": "Urgencias sin autorización administrativa",
+      "use": "SOLO para atención de URGENCIA: no se requiere autorización administrativa. No lo uses para servicios que no son de urgencia.",
+      "excerpts": ["Para acceder a servicios y tecnologías de salud no se requerirá ningún tipo de autorización administrativa entre el prestador de servicios y la entidad que cumpla la función de gestión de servicios de salud cuando se trate de atención de urgencia.", "Parágrafo 2°. Lo anterior sin perjuicio de la tutela."]
+    },
+    {
+      "source": "ley_1751", "article": 15, "title": "Prestaciones y exclusiones",
+      "use": "Los recursos públicos de salud no financian servicios cosméticos, sin evidencia, no autorizados, experimentales o en el exterior; esas exclusiones deben ser explícitas. Sirve para distinguir una negación legítima de una ilegal.",
+      "excerpts": ["En todo caso, los recursos públicos asignados a la salud no podrán destinarse a financiar servicios y tecnologías en los que se advierta alguno de los siguientes criterios:", "a) Que tengan como finalidad principal un propósito cosmético o suntuario no relacionado con la recuperación o mantenimiento de la capacidad funcional o vital de las personas;", "Los servicios o tecnologías que cumplan con esos criterios serán explícitamente excluidos por el Ministerio de Salud y Protección Social o la autoridad competente que determine la ley ordinaria"]
+    },
+    {
+      "source": "ley_1751", "article": 17, "title": "Autonomía del médico tratante",
+      "use": "Se garantiza la autonomía del profesional de la salud para decidir el diagnóstico y el tratamiento; útil cuando la EPS niega lo que ordenó el médico tratante.",
+      "excerpts": ["Se garantiza la autonomía de los profesionales de la salud para adoptar decisiones sobre el diagnóstico y tratamiento de los pacientes que tienen a su cargo."]
+    }
+  ]
+}

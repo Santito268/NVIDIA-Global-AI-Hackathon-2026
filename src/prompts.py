@@ -74,11 +74,18 @@ If the document is a DERECHO DE PETICIÓN, include these sections in order:
 7. Notificaciones and signature: [FIRMA], [NOMBRE], [CÉDULA].
 
 Rules for legal grounds (very important):
-- You may cite by name: Constitución Política (art. 49 and art. 86), Decreto 2591 de 1991,
-  Ley 1755 de 2015 and Ley 1751 de 2015 (Ley Estatutaria de Salud).
-- Any other law or court ruling may ONLY be cited if it appears in the SOURCES provided.
-  Cite it with its title and its exact URL. Never invent rulings, numbers or URLs.
-- Use the source snippets only for what they actually say.
+- Laws and constitutional articles may ONLY come from the LEGAL CODE provided. Cite them with
+  their article number and the name of the norm, and you may add the URL given there.
+  Follow each article's "Uso" note strictly: never use an article for something its "Uso"
+  does not say. Never cite any other law, decree or article.
+- Court rulings (sentencias) may ONLY be cited if they appear in the SOURCES provided, with
+  their title and exact URL. Use their snippets only for what they actually say.
+- Never invent rulings, article numbers, quotes or URLs.
+- If the person writing is not the affected person (e.g. a son or daughter writing for a
+  parent who cannot act on their own), the tutela must say so expressly (agencia oficiosa,
+  artículo 10 del Decreto 2591 de 1991).
+- In an urgent case, ask the judge for a medida provisional (artículo 7 del Decreto 2591 de
+  1991) in the Pretensiones.
 
 Other rules:
 - Never write real personal data; always use the placeholders in brackets.

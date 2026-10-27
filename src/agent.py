@@ -5,7 +5,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 
-from src import config, prompts
+from src import config, legal, prompts
 from src.llm import CallMetrics, LLMError, chat, chat_json
 from src.schemas import CaseFacts, DraftDocument, RouteDecision, SearchPlan, Source
 from src.tools import search_web
@@ -76,8 +76,8 @@ def run_research(
 
 
 def remove_unverified_urls(text: str, sources: list[Source]) -> tuple[str, list[str]]:
-    """Replace every URL that research did not find; return the text and the URLs kept."""
-    known = {s.url for s in sources}
+    """Replace every URL not found by research nor in the legal code; return text and URLs kept."""
+    known = {s.url for s in sources} | legal.corpus_urls()
     cited: list[str] = []
 
     def check(match: re.Match) -> str:
@@ -101,9 +101,13 @@ def run_draft(
         "facts": facts.model_dump(),
         "sources": [s.model_dump() for s in sources],
     }
+    user_content = (
+        f"LEGAL CODE:\n{legal.format_for_prompt()}\n\n"
+        f"CASE AND SOURCES:\n{json.dumps(case, ensure_ascii=False)}"
+    )
     messages = [
         {"role": "system", "content": prompts.DRAFT_SYSTEM},
-        {"role": "user", "content": json.dumps(case, ensure_ascii=False)},
+        {"role": "user", "content": user_content},
     ]
     # Plain text instead of JSON: long documents break easily inside JSON strings.
     text, metrics = chat(
