@@ -25,3 +25,14 @@ DEFAULT_MAX_TOKENS: int = 1500
 # Limits that protect credits on the public demo
 MAX_INPUT_CHARS: int = 2000
 MAX_SEARCHES_PER_CASE: int = 3
+RESULTS_PER_SEARCH: int = 3
+MAX_SNIPPET_CHARS: int = 500
+
+# Web research only looks at official Colombian legal and health sources, not blogs.
+TRUSTED_DOMAINS: list[str] = [
+    "corteconstitucional.gov.co",
+    "secretariasenado.gov.co",
+    "funcionpublica.gov.co",
+    "minsalud.gov.co",
+    "supersalud.gov.co",
+]

@@ -1,4 +1,17 @@
-"""Canned model answers used when LLM_MODE=mock (no Nebius credits needed)."""
+"""Canned answers used when LLM_MODE=mock (no Nebius or Tavily credits needed)."""
+
+MOCK_SOURCES: list[dict] = [
+    {
+        "title": "Sentencia T-000 de 2026 (ejemplo)",
+        "url": "https://www.corteconstitucional.gov.co/relatoria/ejemplo-1",
+        "content": "Fuente de ejemplo: la EPS no puede negar un medicamento formulado.",
+    },
+    {
+        "title": "Ley de ejemplo sobre el derecho a la salud",
+        "url": "https://www.secretariasenado.gov.co/ejemplo-2",
+        "content": "Fuente de ejemplo: la salud es un derecho fundamental.",
+    },
+]
 
 MOCK_RESPONSES: dict[str, str] = {
     "intake": """{
