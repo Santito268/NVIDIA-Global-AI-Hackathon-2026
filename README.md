@@ -197,6 +197,8 @@ To deploy on Streamlit Community Cloud, add the same four values as TOML secrets
   or addresses, and the document uses blanks for them, but the code does not scrub personal data.
 - **Demo limits:** 3 cases per session and 50 per day for the whole app, to protect credits.
   Reloading resets the session limit; restarting the server resets the daily one.
+- **The look depends on Streamlit internals.** The custom CSS targets some of Streamlit's
+  internal element names, so Streamlit is pinned (1.66.1); upgrading it needs a visual check.
 - **English is a reference translation** by Nano; Spanish legal terms are not always kept.
 - **Scope:** health insurers (EPS) only, two document types, and a 30-article legal code.
   Next: more legal areas (pensions, labor), a PDF/Word download, and a filing guide per city.
