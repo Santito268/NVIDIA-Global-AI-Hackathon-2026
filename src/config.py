@@ -8,6 +8,9 @@ load_dotenv()
 
 # "mock" returns canned responses (no credits needed); "live" calls Nebius Token Factory.
 LLM_MODE: str = os.getenv("LLM_MODE", "mock").strip().lower()
+if LLM_MODE not in ("mock", "live"):
+    # Fail loudly: a typo must never silently switch to paid "live" calls.
+    raise ValueError(f"LLM_MODE must be 'mock' or 'live', got {LLM_MODE!r}. Check your .env.")
 
 NEBIUS_API_KEY: str = os.getenv("NEBIUS_API_KEY", "")
 NEBIUS_BASE_URL: str = os.getenv("NEBIUS_BASE_URL", "")
