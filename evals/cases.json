@@ -1,0 +1,62 @@
+[
+  {
+    "id": "01_insulina_adulto_mayor",
+    "description": "Mi papá tiene 72 años y es diabético. El médico de la EPS le formuló insulina glargina el 1 de octubre, pero cuando fuimos a reclamarla en la farmacia nos dijeron que la EPS no la autorizó porque \"no está disponible\". Ya pasaron tres semanas y se le está acabando la que tenía.",
+    "expected": {"document_type": "tutela", "writer_is_affected_person": false, "special_protection": true}
+  },
+  {
+    "id": "02_cirugia_nina",
+    "description": "Mi hija tiene 5 años y necesita una cirugía de amígdalas porque le dan infecciones muy seguido y le cuesta respirar de noche. La EPS autorizó la cirugía hace dos meses pero nunca le dan fecha. Cada vez que llamo me dicen que no hay agenda.",
+    "expected": {"document_type": "tutela", "writer_is_affected_person": false, "special_protection": true}
+  },
+  {
+    "id": "03_quimioterapia",
+    "description": "Tengo cáncer de seno y mi oncólogo me ordenó quimioterapia hace tres semanas. La EPS todavía no la autoriza, dicen que está en revisión. El médico me dijo que no puedo esperar más porque el tumor puede crecer.",
+    "expected": {"document_type": "tutela", "writer_is_affected_person": true, "special_protection": true}
+  },
+  {
+    "id": "04_control_prenatal",
+    "description": "Tengo 7 meses de embarazo y desde hace un mes la EPS no me asigna los controles prenatales ni la ecografía que me ordenó el ginecólogo. Me dicen que vuelva a llamar la próxima semana pero nunca hay citas.",
+    "expected": {"document_type": "tutela", "writer_is_affected_person": true, "special_protection": true}
+  },
+  {
+    "id": "05_silla_de_ruedas",
+    "description": "Tengo una discapacidad física y uso silla de ruedas. La mía está rota y el fisiatra me formuló una nueva hace dos meses, pero la EPS la negó diciendo que no está en el plan de beneficios. Sin la silla no puedo salir de mi casa.",
+    "expected": {"document_type": "tutela", "writer_is_affected_person": true, "special_protection": true}
+  },
+  {
+    "id": "06_dialisis_interrumpida",
+    "description": "Mi mamá tiene 50 años y una enfermedad renal crónica. Le hacen diálisis tres veces por semana, pero desde hace una semana la EPS dejó de autorizar las sesiones porque cambió de clínica. El nefrólogo dice que sin diálisis su vida corre peligro.",
+    "expected": {"document_type": "tutela", "writer_is_affected_person": false, "special_protection": true}
+  },
+  {
+    "id": "07_dermatologia_acne",
+    "description": "Tengo 35 años y pedí una cita con dermatología por un acné que tengo hace tiempo. El médico general me remitió hace un mes y la EPS todavía no me da la cita. No es grave pero quiero que me atiendan.",
+    "expected": {"document_type": "derecho_de_peticion", "writer_is_affected_person": true, "special_protection": false}
+  },
+  {
+    "id": "08_historia_clinica",
+    "description": "Pedí a mi EPS una copia de mi historia clínica hace tres semanas porque quiero llevarla a un médico particular para una segunda opinión. No me han respondido nada.",
+    "expected": {"document_type": "derecho_de_peticion", "writer_is_affected_person": true, "special_protection": false}
+  },
+  {
+    "id": "09_plantillas_ortopedicas",
+    "description": "Tengo 30 años y el ortopedista me ordenó unas plantillas ortopédicas por pie plano. Radiqué la orden en la EPS hace 20 días y la autorización sigue en trámite. Me duelen un poco los pies al caminar mucho.",
+    "expected": {"document_type": "derecho_de_peticion", "writer_is_affected_person": true, "special_protection": false}
+  },
+  {
+    "id": "10_control_medicina_general",
+    "description": "Tengo 40 años, estoy sano y quiero una cita de control en medicina general para unos exámenes de rutina. Llevo dos semanas llamando a la EPS y la línea siempre está ocupada o no hay agenda.",
+    "expected": {"document_type": "derecho_de_peticion", "writer_is_affected_person": true, "special_protection": false}
+  },
+  {
+    "id": "11_antialergico",
+    "description": "Tengo 28 años y una rinitis alérgica leve. El médico me formuló un antialérgico, pero la EPS me dijo que ese no lo cubre y que lo compre yo. Quiero que me expliquen por escrito por qué lo negaron.",
+    "expected": {"document_type": "derecho_de_peticion", "writer_is_affected_person": true, "special_protection": false}
+  },
+  {
+    "id": "12_optometria_hermano",
+    "description": "Escribo por mi hermano, que tiene 30 años. Él necesita una cita de optometría porque cree que necesita gafas para leer. La pidió hace tres semanas y la EPS no se la ha dado. No es urgente pero ya lleva mucho esperando.",
+    "expected": {"document_type": "derecho_de_peticion", "writer_is_affected_person": false, "special_protection": false}
+  }
+]
