@@ -25,6 +25,7 @@ URL_PATTERN = re.compile(r"https?://[^\s)\]>]+")
 REMOVED_URL_NOTE = "[enlace eliminado: no proviene de una fuente verificada]"
 QUOTE_PATTERN = re.compile(r"«([^«»]+)»")
 REMOVED_QUOTE_NOTE = "[cita eliminada: no aparece en la fuente]"
+ITEM_START_PATTERN = re.compile(r"^(?:[-*]|\d+[.)])\s")
 PLACEHOLDER_PATTERN = re.compile(r"\[[A-ZÁÉÍÓÚÑ ]+\]")
 # The title and the addressee built by src/document.py: formal names that stay in Spanish
 # (in a live test Nano misspelled the title and dropped the addressee line).
@@ -182,6 +183,23 @@ def remove_unverified_quotes(text: str, sources: list[Source]) -> str:
     return QUOTE_PATTERN.sub(check, text)
 
 
+def drop_items_with_removed_quotes(text: str) -> str:
+    """Remove every list item or paragraph whose quote was removed.
+
+    A ruling cited with "[cita eliminada]" proves nothing and looks broken to a judge; the
+    laws from the verified legal code remain as the legal grounds.
+    """
+    blocks: list[list[str]] = []
+    for line in text.split("\n"):
+        starts_block = not line.strip() or ITEM_START_PATTERN.match(line)
+        if not blocks or starts_block or not blocks[-1][-1].strip():
+            blocks.append([line])
+        else:
+            blocks[-1].append(line)  # continuation of a multi-line item
+    kept = [block for block in blocks if not any(REMOVED_QUOTE_NOTE in ln for ln in block)]
+    return "\n".join(line for block in kept for line in block)
+
+
 def run_draft(
     facts: CaseFacts, route: RouteDecision, sources: list[Source]
 ) -> tuple[DraftDocument, list[CallMetrics]]:
@@ -219,7 +237,8 @@ def run_draft(
         raise LLMError("The model returned an incomplete document. Please try again.")
 
     checked = {
-        heading: remove_unverified_quotes(content, sources) for heading, content in sections.items()
+        heading: drop_items_with_removed_quotes(remove_unverified_quotes(content, sources))
+        for heading, content in sections.items()
     }
     body, cited = remove_unverified_urls(
         build_document(route.document_type, facts, checked), sources

@@ -175,6 +175,29 @@ def test_mock_draft_drops_the_invented_quote():
     body = agent.run_case("La EPS no me entrega un medicamento.").draft.body_markdown
     assert "«la EPS no puede negar un medicamento formulado»" in body
     assert "nadie dijo" not in body
+    assert "Fuente inventada" not in body  # the whole line goes, not only the quote
+    assert agent.REMOVED_QUOTE_NOTE not in body
+
+
+def test_items_with_a_removed_quote_are_dropped_whole():
+    note = agent.REMOVED_QUOTE_NOTE
+    text = (
+        "- Artículo 49 de la Constitución Política: salud.\n"
+        "- En la Sentencia T-1/24\n"
+        f"  (https://x.gov.co) se lee: {note}.\n"
+        "- Artículo 46 de la Constitución Política: tercera edad.\n"
+        "\n"
+        f"Un párrafo con {note}.\n"
+        "\n"
+        "1. Hecho que se queda."
+    )
+    assert agent.drop_items_with_removed_quotes(text) == (
+        "- Artículo 49 de la Constitución Política: salud.\n"
+        "- Artículo 46 de la Constitución Política: tercera edad.\n"
+        "\n"
+        "\n"
+        "1. Hecho que se queda."
+    )
 
 
 def test_strip_reasoning_removes_think_block():
