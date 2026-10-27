@@ -61,7 +61,33 @@ def test_run_case_in_mock_mode():
     assert isinstance(result.facts, CaseFacts)
     assert result.route.document_type in ("tutela", "derecho_de_peticion")
     assert result.queries and result.sources
-    assert [m.step for m in result.metrics] == ["intake", "route", "research"]
+    assert result.draft.title == "Acción de tutela"
+    assert [m.step for m in result.metrics] == ["intake", "route", "research", "draft"]
+
+
+def test_draft_removes_invented_urls_and_keeps_verified_ones():
+    verified = Source(title="T", url="https://corteconstitucional.gov.co/t-1", snippet="s")
+    text = (
+        "Ver https://corteconstitucional.gov.co/t-1. "
+        "También https://www.blog-falso.com/inventada y (https://otro-falso.co/x)."
+    )
+    body, cited = agent.remove_unverified_urls(text, [verified])
+
+    assert "https://corteconstitucional.gov.co/t-1" in body
+    assert "blog-falso" not in body and "otro-falso" not in body
+    assert body.count(agent.REMOVED_URL_NOTE) == 2
+    assert cited == ["https://corteconstitucional.gov.co/t-1"]
+
+
+def test_mock_draft_drops_the_fake_source():
+    result = agent.run_case("La EPS no me entrega un medicamento.")
+    assert "blog-falso" not in result.draft.body_markdown
+    assert all("blog-falso" not in url for url in result.draft.cited_urls)
+
+
+def test_strip_reasoning_removes_think_block():
+    assert llm.strip_reasoning("<think>borrador</think>\n# Tutela") == "# Tutela"
+    assert llm.strip_reasoning("# Tutela") == "# Tutela"
 
 
 def _fake_research(monkeypatch, queries: list[str], results_by_query: dict[str, list[Source]]):

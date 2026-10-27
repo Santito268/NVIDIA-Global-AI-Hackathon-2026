@@ -99,7 +99,14 @@ def chat(
         metrics.completion_tokens,
         metrics.latency_s,
     )
-    return response.choices[0].message.content or "", metrics
+    return strip_reasoning(response.choices[0].message.content or ""), metrics
+
+
+def strip_reasoning(text: str) -> str:
+    """Remove a <think>...</think> reasoning trace if the model mixed it into the answer."""
+    if "</think>" in text:
+        text = text.split("</think>", 1)[1]
+    return text.strip()
 
 
 def extract_json(text: str) -> dict:

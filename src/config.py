@@ -24,6 +24,8 @@ SUPER_MODEL: str = os.getenv("NEMOTRON_SUPER_MODEL") or "nvidia/nemotron-3-super
 REQUEST_TIMEOUT_S: float = 60.0
 MAX_RETRIES: int = 3
 DEFAULT_MAX_TOKENS: int = 1500
+# Drafting reasons before writing a long document, so it needs more room.
+DRAFT_MAX_TOKENS: int = 8000
 
 # Limits that protect credits on the public demo
 MAX_INPUT_CHARS: int = 2000

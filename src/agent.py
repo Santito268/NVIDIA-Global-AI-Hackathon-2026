@@ -1,13 +1,18 @@
-"""The pipeline: intake -> route -> research (draft and explain come next)."""
+"""The pipeline: intake -> route -> research -> draft (explain comes next)."""
 
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 
 from src import config, prompts
-from src.llm import CallMetrics, LLMError, chat_json
-from src.schemas import CaseFacts, RouteDecision, SearchPlan, Source
+from src.llm import CallMetrics, LLMError, chat, chat_json
+from src.schemas import CaseFacts, DraftDocument, RouteDecision, SearchPlan, Source
 from src.tools import search_web
+
+DOCUMENT_TITLES = {"tutela": "Acción de tutela", "derecho_de_peticion": "Derecho de petición"}
+URL_PATTERN = re.compile(r"https?://[^\s)\]>]+")
+REMOVED_URL_NOTE = "[enlace eliminado: no proviene de una fuente verificada]"
 
 
 @dataclass
@@ -18,6 +23,7 @@ class CaseResult:
     route: RouteDecision
     queries: list[str]
     sources: list[Source]
+    draft: DraftDocument
     metrics: list[CallMetrics] = field(default_factory=list)
 
 
@@ -69,14 +75,59 @@ def run_research(
     return queries, list(sources.values()), metrics
 
 
+def remove_unverified_urls(text: str, sources: list[Source]) -> tuple[str, list[str]]:
+    """Replace every URL that research did not find; return the text and the URLs kept."""
+    known = {s.url for s in sources}
+    cited: list[str] = []
+
+    def check(match: re.Match) -> str:
+        url = match.group(0).rstrip(".,;:")
+        if url in known:
+            if url not in cited:
+                cited.append(url)
+            return match.group(0)
+        return REMOVED_URL_NOTE
+
+    return URL_PATTERN.sub(check, text), cited
+
+
+def run_draft(
+    facts: CaseFacts, route: RouteDecision, sources: list[Source]
+) -> tuple[DraftDocument, list[CallMetrics]]:
+    """Step 4 (Super, with reasoning): write the document, citing only verified sources."""
+    case = {
+        "document_type": route.document_type,
+        "reason": route.reason,
+        "facts": facts.model_dump(),
+        "sources": [s.model_dump() for s in sources],
+    }
+    messages = [
+        {"role": "system", "content": prompts.DRAFT_SYSTEM},
+        {"role": "user", "content": json.dumps(case, ensure_ascii=False)},
+    ]
+    # Plain text instead of JSON: long documents break easily inside JSON strings.
+    text, metrics = chat(
+        messages, config.SUPER_MODEL, "draft", thinking=True, max_tokens=config.DRAFT_MAX_TOKENS
+    )
+    if not text:
+        raise LLMError("The model returned an empty document. Please try again.")
+
+    body, cited = remove_unverified_urls(text, sources)
+    draft = DraftDocument(
+        title=DOCUMENT_TITLES[route.document_type], body_markdown=body, cited_urls=cited
+    )
+    return draft, [metrics]
+
+
 def run_case(description: str) -> CaseResult:
     """Run every pipeline step for one case."""
     description = validate_input(description)
     facts, intake_metrics = run_intake(description)
     route, route_metrics = run_route(facts)
     queries, sources, research_metrics = run_research(facts, route)
-    metrics = intake_metrics + route_metrics + research_metrics
-    return CaseResult(facts, route, queries, sources, metrics)
+    draft, draft_metrics = run_draft(facts, route, sources)
+    metrics = intake_metrics + route_metrics + research_metrics + draft_metrics
+    return CaseResult(facts, route, queries, sources, draft, metrics)
 
 
 def main() -> None:
@@ -91,6 +142,8 @@ def main() -> None:
     print("Sources:")
     for s in result.sources:
         print(f"  - {s.title}\n    {s.url}")
+    print("\n" + "=" * 70 + "\n" + result.draft.body_markdown + "\n" + "=" * 70)
+    print("Cited sources:", *result.draft.cited_urls, sep="\n  - ")
     for m in result.metrics:
         tokens = f"{m.prompt_tokens}+{m.completion_tokens}"
         print(f"[{m.step}] {m.model} {tokens} tokens {m.latency_s:.2f}s")

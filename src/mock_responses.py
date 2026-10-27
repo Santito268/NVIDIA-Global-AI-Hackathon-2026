@@ -29,6 +29,28 @@ MOCK_RESPONSES: dict[str, str] = {
   "document_type": "tutela",
   "reason": "La negativa pone en riesgo la salud de un adulto mayor, por eso procede la tutela."
 }""",
+    "draft": """# ACCIÓN DE TUTELA
+
+Señor(a) Juez de la República (reparto)
+
+**Accionante:** [NOMBRE], identificado(a) con cédula [CÉDULA], residente en [CIUDAD DE RESIDENCIA].
+**Accionada:** EPS Ejemplo.
+
+## Hechos
+1. El médico tratante formuló insulina glargina el 1 de octubre de 2026.
+2. La EPS no ha entregado el medicamento.
+
+## Fundamentos de derecho
+Constitución Política, art. 86; Decreto 2591 de 1991; Ley 1751 de 2015.
+Sentencia T-000 de 2026 (ejemplo): https://www.corteconstitucional.gov.co/relatoria/ejemplo-1
+Fuente inventada: https://www.blog-falso.com/no-verificada
+
+## Juramento
+Bajo la gravedad del juramento manifiesto que no he presentado otra tutela por los mismos hechos.
+
+[FIRMA]
+[NOMBRE] — [CÉDULA]
+""",
     "research": """{
   "queries": [
     "tutela negación de medicamentos EPS",
