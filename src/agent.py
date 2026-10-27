@@ -33,7 +33,7 @@ def run_intake(description: str) -> tuple[CaseFacts, list[CallMetrics]]:
         {"role": "system", "content": prompts.INTAKE_SYSTEM},
         {"role": "user", "content": description},
     ]
-    return chat_json(messages, config.NANO_MODEL, "intake", CaseFacts)
+    return chat_json(messages, config.NANO_MODEL, "intake", CaseFacts, thinking=False)
 
 
 def run_route(facts: CaseFacts) -> tuple[RouteDecision, list[CallMetrics]]:
@@ -42,7 +42,7 @@ def run_route(facts: CaseFacts) -> tuple[RouteDecision, list[CallMetrics]]:
         {"role": "system", "content": prompts.ROUTE_SYSTEM},
         {"role": "user", "content": facts.model_dump_json()},
     ]
-    return chat_json(messages, config.NANO_MODEL, "route", RouteDecision)
+    return chat_json(messages, config.NANO_MODEL, "route", RouteDecision, thinking=False)
 
 
 def run_case(description: str) -> CaseResult:

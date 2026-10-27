@@ -50,9 +50,14 @@ def chat(
     messages: list[dict],
     model: str,
     step: str,
+    thinking: bool = False,
     max_tokens: int = config.DEFAULT_MAX_TOKENS,
 ) -> tuple[str, CallMetrics]:
-    """Send a chat request and return the answer text and its metrics."""
+    """Send a chat request and return the answer text and its metrics.
+
+    `thinking` toggles Nemotron's reasoning trace. Off cut intake tokens ~5x with the same result,
+    so it is only turned on for steps that need real reasoning.
+    """
     start = time.perf_counter()
 
     if config.LLM_MODE == "mock":
@@ -64,7 +69,11 @@ def chat(
         raise LLMError(f"No model configured for step '{step}'. Check the model IDs in .env.")
     try:
         response = _client().chat.completions.create(
-            model=model, messages=messages, max_tokens=max_tokens, temperature=0.2
+            model=model,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=0.2,
+            extra_body={"chat_template_kwargs": {"enable_thinking": thinking}},
         )
     except openai.APITimeoutError as exc:
         raise LLMError("The model took too long to answer. Please try again.") from exc
@@ -102,12 +111,12 @@ def extract_json(text: str) -> dict:
 
 
 def chat_json(
-    messages: list[dict], model: str, step: str, schema: type[T]
+    messages: list[dict], model: str, step: str, schema: type[T], thinking: bool = False
 ) -> tuple[T, list[CallMetrics]]:
     """Ask for JSON and validate it; on invalid output, retry once telling the model the error."""
     all_metrics: list[CallMetrics] = []
     for attempt in range(2):
-        text, metrics = chat(messages, model, step)
+        text, metrics = chat(messages, model, step, thinking=thinking)
         all_metrics.append(metrics)
         try:
             return schema.model_validate(extract_json(text)), all_metrics

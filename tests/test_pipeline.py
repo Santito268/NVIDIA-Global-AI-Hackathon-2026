@@ -1,5 +1,7 @@
 """Pipeline tests. They run in mock mode: no network, no credits."""
 
+from types import SimpleNamespace
+
 import pytest
 
 from src import agent, config, llm
@@ -35,6 +37,23 @@ def test_chat_json_gives_up_with_user_friendly_error(monkeypatch):
     monkeypatch.setattr(llm, "chat", lambda *a, **k: ("bad", llm.CallMetrics("x", "m", 0, 0, 0)))
     with pytest.raises(llm.LLMError):
         llm.chat_json([], "m", "route", RouteDecision)
+
+
+def test_chat_sends_thinking_switch_to_nebius(monkeypatch):
+    sent = {}
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            sent.update(kwargs)
+            message = SimpleNamespace(content="ok")
+            return SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=None)
+
+    fake_client = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
+    monkeypatch.setattr(config, "LLM_MODE", "live")
+    monkeypatch.setattr(llm, "_client", lambda: fake_client)
+
+    llm.chat([], "some-model", "intake", thinking=False)
+    assert sent["extra_body"] == {"chat_template_kwargs": {"enable_thinking": False}}
 
 
 def test_run_case_in_mock_mode():
