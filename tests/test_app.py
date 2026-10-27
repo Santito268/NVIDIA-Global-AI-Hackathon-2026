@@ -73,6 +73,31 @@ def test_examples_are_shown_in_english_but_processed_in_spanish(monkeypatch):
     assert "Mi hija" in at.text_area(key="description").value
 
 
+@pytest.mark.parametrize("fails", [False, True])
+def test_widgets_are_released_after_a_case_and_it_never_runs_twice(monkeypatch, fails):
+    calls = []
+    real_run_case = agent.run_case
+
+    def counting_run_case(description, **kwargs):
+        calls.append(description)
+        if fails:
+            raise LLMError("The model took too long to answer.", "timeout")
+        return real_run_case(description, **kwargs)
+
+    monkeypatch.setattr(agent, "run_case", counting_run_case)
+    at = _app()
+    at.button(key="sample").click().run()
+    at.button(key="generate").click().run()
+    assert len(calls) == 1
+    assert not at.session_state.running and at.session_state.pending is None
+    assert not at.segmented_control(key="language").disabled
+    assert not at.text_area(key="description").disabled
+    assert (TEXT["error_timeout"] in [c.value for c in at.caption]) == fails
+
+    at.segmented_control(key="language").set_value("en").run()  # any later click
+    assert len(calls) == 1  # the case is not run again
+
+
 def test_every_example_has_a_hand_written_copy_in_every_language():
     samples = APP_PATH.parent / "data" / "samples"
     for name in ("caso_01", "caso_02", "caso_03"):

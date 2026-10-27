@@ -55,6 +55,11 @@ def init_state() -> None:
     # {language: {"explanation": ExplanationText, "sections": dict}, or None if it failed}
     st.session_state.setdefault("translations", {})
     st.session_state.setdefault("translation_metrics", [])
+    # While a case runs, every widget is disabled: any click reruns the page, and a rerun
+    # would stop the pipeline halfway (credits spent, no result).
+    st.session_state.setdefault("running", False)
+    st.session_state.setdefault("pending", None)  # the description waiting to be processed
+    st.session_state.setdefault("last_error", None)  # error code of the last failed case
 
 
 @st.cache_resource
@@ -139,13 +144,24 @@ def generate(description: str) -> bool:
         )
     except (LLMError, SearchError) as error:
         placeholder.empty()
-        st.error(t("error_message"))
-        st.caption(t(f"error_{error.code}"))
+        st.session_state.last_error = error.code  # shown after the rerun, in the chosen language
         return False
     show_stepper(placeholder, len(STEPS))
     st.session_state.result = result
     st.session_state.translations = {}  # translations belong to the previous case
     return True
+
+
+def run_pending() -> None:
+    """Second half of a click on Generate: the page is drawn with every widget disabled."""
+    try:
+        done = generate(st.session_state.pending)
+    finally:
+        # Also when the run is stopped: it must never start again by itself.
+        st.session_state.running, st.session_state.pending = False, None
+    if done:
+        st.toast(t("status_done"), icon="✅")
+    st.rerun()  # enable the widgets again and show the results or the error
 
 
 def translate(result: CaseResult, spanish: ExplanationText, lang: str) -> dict | None:
@@ -286,6 +302,7 @@ def show_header() -> None:
             default=config.SOURCE_LANGUAGE,
             key="language",
             label_visibility="collapsed",
+            disabled=st.session_state.running,
         )
     stats = [
         (eval_score(), t("stat_eval")),
@@ -306,6 +323,7 @@ def show_header() -> None:
 
 
 def show_case_form() -> None:
+    running = st.session_state.running
     st.markdown(f'<div class="sv-section">{t("case_title")}</div>', unsafe_allow_html=True)
     if config.LLM_MODE == "mock":
         st.caption(t("mock_notice"))
@@ -317,6 +335,7 @@ def show_case_form() -> None:
             on_click=load_sample,
             args=(key,),
             use_container_width=True,
+            disabled=running,
         )
     if t("input_language_note"):
         st.caption(t("input_language_note"))
@@ -327,13 +346,16 @@ def show_case_form() -> None:
         max_chars=config.MAX_INPUT_CHARS,
         height=170,
         placeholder=t("input_placeholder"),
+        disabled=running,
     )
 
     limit = config.MAX_CASES_PER_SESSION
     left = limit - st.session_state.cases_run
     blocked = left <= 0 or daily_cases_left() <= 0
     button, info = st.columns([2, 5], vertical_alignment="center")
-    clicked = button.button(t("generate_button"), key="generate", type="primary", disabled=blocked)
+    clicked = button.button(
+        t("generate_button"), key="generate", type="primary", disabled=blocked or running
+    )
     with info:
         if left <= 0:
             st.warning(t("limit_reached", limit=limit))
@@ -347,9 +369,16 @@ def show_case_form() -> None:
             st.warning(t("daily_limit_reached"))
         elif not description:
             st.error(t("empty_input"))
-        elif generate(text_to_process(description)):
-            st.toast(t("status_done"), icon="✅")
-            st.rerun()  # redraw so the case counter and the results update together
+        else:
+            # First half: remember the case and redraw the page with every widget disabled.
+            st.session_state.pending = text_to_process(description)
+            st.session_state.running, st.session_state.last_error = True, None
+            st.rerun()
+    if running:
+        run_pending()
+    elif st.session_state.last_error:
+        st.error(t("error_message"))
+        st.caption(t(f"error_{st.session_state.last_error}"))
 
 
 def main() -> None:
