@@ -1,10 +1,12 @@
-# Tutela Fácil EPS
+# Subvenio
+
+_Subvenio_ is Latin for "I come to help".
 
 **Turns a Colombian citizen's problem with their health insurer (EPS) into a ready-to-file
 _tutela_ or _derecho de petición_, with verified legal grounds explained in plain words.**
 Built with NVIDIA Nemotron on Nebius Token Factory, plus Tavily web search.
 
-- **Live demo:** https://subvenio.streamlit.app/ (try "Usar un caso de ejemplo", then switch to English)
+- **Live demo:** https://subvenio.streamlit.app/ (click one of the three example cases, then switch to English)
 - **Video (< 3 min):** _coming soon_
 - **Devpost:** https://nebiusglobalaihackathon.devpost.com
 - **Track:** Best Apps and Agents
@@ -44,7 +46,14 @@ search snippet, so the citizen can check each quote) and **Metrics** (model, tok
 each step). A language switch shows everything in English for non-Spanish readers; the document
 to file always stays in Spanish.
 
-<!-- TODO: add a screenshot or GIF of the app: docs/demo.gif -->
+While the case runs, a progress panel shows each step and the Nemotron model doing it.
+
+![Subvenio home page: hero, how it works, legal and privacy notices](docs/screenshot-home.png)
+
+![Explanation tab: recommended document, plain-words summary, blanks to fill in and next steps](docs/screenshot-result.png)
+
+_The second screenshot shows the explanation tab with the app's built-in example answers
+(demo mode, no AI calls)._
 
 ## Accuracy first: what the code guarantees
 
@@ -109,7 +118,8 @@ flowchart TD
     UI -. English .-> TR[Nemotron Nano translation<br/>protected tokens + cache]
 ```
 
-Code map: `app.py` (interface) · `src/agent.py` (pipeline and checks) · `src/document.py`
+Code map: `app.py` (interface) · `src/ui_text.py` (hand-written Spanish and English texts) ·
+`src/ui_style.py` (styles and animations) · `src/agent.py` (pipeline and checks) · `src/document.py`
 (fixed document parts) · `src/llm.py` (Nebius client) · `src/tools.py` (Tavily) ·
 `src/prompts.py` · `src/legal.py` + `data/legal/mini_codigo.json` · `evals/` (evaluation set).
 
