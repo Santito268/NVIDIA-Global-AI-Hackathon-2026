@@ -18,6 +18,13 @@ class CaseFacts(BaseModel):
     urgent_health_risk: bool = Field(description="True if delay risks the person's health or life")
     special_protection: bool = Field(description="Minor, older adult, disability, pregnancy, etc.")
     special_protection_reason: str | None = None
+    # No default on purpose: the model must decide it (it changes who files the tutela).
+    writer_is_affected_person: bool = Field(
+        description="False if someone writes on behalf of the affected person (agencia oficiosa)"
+    )
+    writer_relationship: str | None = Field(
+        None, description="Relationship of the writer to the affected person, e.g. 'hijo/a'"
+    )
     missing_info: list[str] = Field(default_factory=list)
 
 

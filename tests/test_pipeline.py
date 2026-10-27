@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 
 import pytest
+from pydantic import ValidationError
 
 from src import agent, config, llm
 from src.schemas import CaseFacts, RouteDecision, SearchPlan, Source
@@ -114,7 +115,20 @@ def _facts() -> CaseFacts:
         events_summary="x",
         urgent_health_risk=True,
         special_protection=False,
+        writer_is_affected_person=True,
     )
+
+
+def test_intake_requires_the_model_to_say_who_writes():
+    data = {"problem_type": "other", "events_summary": "x", "urgent_health_risk": False}
+    with pytest.raises(ValidationError):
+        CaseFacts.model_validate({**data, "special_protection": False})
+
+
+def test_mock_intake_detects_agencia_oficiosa():
+    facts, _ = agent.run_intake("Mi papá de 72 años no recibe su insulina.")
+    assert facts.writer_is_affected_person is False
+    assert facts.writer_relationship
 
 
 def test_research_runs_at_most_the_configured_searches(monkeypatch):

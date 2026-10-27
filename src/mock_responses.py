@@ -23,6 +23,8 @@ MOCK_RESPONSES: dict[str, str] = {
   "urgent_health_risk": true,
   "special_protection": true,
   "special_protection_reason": "adulto mayor",
+  "writer_is_affected_person": false,
+  "writer_relationship": "hijo/a",
   "missing_info": ["copia de la fórmula médica", "respuesta escrita de la EPS"]
 }""",
     "route": """{
