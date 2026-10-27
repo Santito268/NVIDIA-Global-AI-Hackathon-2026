@@ -16,6 +16,9 @@ REMOVED_QUOTE_NOTE = "[cita eliminada: no aparece en la fuente]"
 MIN_QUOTE_WORDS = 6  # the shortest excerpt of the legal code has 6 words
 ITEM_START_PATTERN = re.compile(r"^(?:[-*]|\d+[.)])\s")
 PLACEHOLDER_PATTERN = re.compile(r"\[[A-ZÁÉÍÓÚÑ ]+\]")
+# The legal code's private "Uso:" guidance (src/legal.py) leaked into a draft in eval case 05,
+# inline "(Uso: ...)" or as its own line. The prompt forbids it; code makes sure.
+USE_NOTE_PATTERN = re.compile(r"[ \t]*\(Uso:[^)]*\)|^[ \t]*-?[ \t]*Uso:.*\n?", re.MULTILINE)
 
 
 def remove_unverified_urls(text: str, sources: list[Source]) -> tuple[str, list[str]]:
@@ -82,7 +85,7 @@ def drop_items_with_removed_quotes(text: str) -> str:
 
 def check_section(text: str, sources: list[Source]) -> tuple[str, list[str], int]:
     """All the checks for one section of the draft: clean text, URLs kept, quotes removed."""
-    text = remove_unverified_quotes(text, sources)
+    text = remove_unverified_quotes(USE_NOTE_PATTERN.sub("", text), sources)
     removed = text.count(REMOVED_QUOTE_NOTE)  # measured by the evaluation set
     text, urls = remove_unverified_urls(drop_items_with_removed_quotes(text), sources)
     return text, urls, removed

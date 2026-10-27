@@ -132,12 +132,20 @@ model (`evals/checks.py`). Each case must choose the right document, detect who 
 whether there is special protection, cite only laws from the legal code, contain no unverified
 URL and no forbidden content (e.g. asking for court costs).
 
-**Latest live run: 12/12 cases pass every rule. Average 12,672 tokens and 26 s of model time
-per case.** 6/12 documents cite at least one Constitutional Court ruling; the rest rely only on
-verified laws because quotes that were not exact were removed. Full table: [`evals/results.md`](evals/results.md).
+**Latest live run: 11/12 cases pass every rule, and 9/12 documents cite at least one
+Constitutional Court ruling. Average 12,106 tokens and 21 s of model time per case.** The quote
+filter removed 8 quotes that were not exact copies. Full table: [`evals/results.md`](evals/results.md).
 
-The first run passed 10/12: the model changed its answer between runs in two cases. That led to
-the code-based route and temperature 0 for classification steps.
+Each failure became a rule enforced by code, with a test:
+
+- The first run passed 10/12: the model changed its answer between runs in two cases. That led
+  to the code-based route and temperature 0 for classification steps.
+- Only 6/12 documents cited a ruling: 79 of 86 Court snippets from the search lose their accented
+  letters ("prestacin"), so correct quotes never matched. Quotes are now compared ignoring them.
+- Nano once said the writer was the patient while naming the writer's relationship ("hija"); code
+  now settles that contradiction.
+- In the latest run, case 05 copied a private "Uso:" note of the legal code into the document.
+  Code now strips those notes from every draft (fixed after the run).
 
 Reproduce it (spends ~13k tokens per case; Tavily results are cached in `evals/tavily_cache.json`):
 
@@ -188,9 +196,8 @@ To deploy on Streamlit Community Cloud, add the same four values as TOML secrets
 - **Ruling quotes are verified as text, not as holdings.** A quote is copied word for word from
   a search snippet, but the snippet may come from the facts of that case or a lower-court stage
   rather than the Court's decision. The Sources tab shows every snippet so it can be checked.
-- **Half of the documents cite no ruling.** Search snippets sometimes lose accents, so the model
-  cannot copy them exactly and the quote filter removes them. Next: a small verified set of key
-  health rulings, like the legal code.
+- **3/12 documents still cite no ruling.** They rely only on the verified laws. Next: a small
+  verified set of key health rulings, like the legal code.
 - **The document type depends on two facts extracted by Nano** (urgent risk, special
   protection). The evaluation set is small (12 cases); more cases are needed.
 - **Privacy:** the citizen's text is sent to Nebius. The page asks not to type names, ID numbers

@@ -286,6 +286,20 @@ def test_mock_draft_drops_the_invented_quote():
     assert verify.REMOVED_QUOTE_NOTE not in body
 
 
+def test_private_use_notes_of_the_legal_code_never_reach_the_document():
+    text = (
+        "- Artículo 49 de la Constitución Política (Uso: derecho a la salud).\n"
+        "  Uso: citar cuando se niega un servicio\n"
+        "- Artículo 86 de la Constitución Política."
+    )
+    clean, _, _ = verify.check_section(text, [])
+    assert "Uso:" not in clean
+    assert (
+        clean
+        == "- Artículo 49 de la Constitución Política.\n- Artículo 86 de la Constitución Política."
+    )
+
+
 def test_draft_counts_the_quotes_the_filter_removed():
     draft = agent.run_case("La EPS no me entrega un medicamento.").draft
     assert draft.removed_quotes == 1  # the mock invents exactly one quote

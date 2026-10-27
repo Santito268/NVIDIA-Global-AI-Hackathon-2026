@@ -10,30 +10,31 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 1,
-  "tokens": 12279,
-  "latency_s": 23.1,
+  "rulings_cited": 2,
+  "quotes_removed": 4,
+  "tokens": 12669,
+  "latency_s": 19.8,
   "facts": {
    "eps": null,
    "problem_type": "authorization_delayed",
    "service_requested": "insulina glargina",
-   "events_summary": "El médico de la EPS formuló insulina glargina el 1 de octubre; al reclamarla en la farmacia la EPS dijo que no está disponible, y después de tres semanas la insulina se está agotando.",
+   "events_summary": "El médico de la EPS formuló insulina glargina el 1 de octubre; al reclamarla en la farmacia la EPS dijo que no está disponible y no la autorizó, dejando al paciente sin medicamento después de tres semanas.",
    "relevant_dates": [
     "1 de octubre"
    ],
    "urgent_health_risk": true,
    "special_protection": true,
-   "special_protection_reason": "persona mayor de 60 años (72 años) con diabetes",
+   "special_protection_group": "older_adult",
    "writer_is_affected_person": false,
    "writer_relationship": "hijo/a",
    "missing_info": [
-    "fecha exacta de la solicitud de insulina",
-    "fecha de la última reposición de insulina",
-    "si hay orden médica escrita o receta",
-    "si se ha intentado otros canales de reclamación"
+    "fecha exacta de la solicitud de autorización",
+    "fecha de la última recarga de insulina del paciente",
+    "si existe orden médica escrita o receta",
+    "si se ha intentado algún otro canal de reclamación con la EPS"
    ]
   },
-  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (persona mayor de 60 años (72 años) con diabetes) y la demora pone en riesgo inminente la salud o la vida del paciente.",
+  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (adulto mayor) y la demora pone en riesgo inminente la salud o la vida del paciente.",
   "passed": true
  },
  {
@@ -47,33 +48,32 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 0,
-  "tokens": 13270,
-  "latency_s": 27.7,
+  "rulings_cited": 2,
+  "quotes_removed": 0,
+  "tokens": 12489,
+  "latency_s": 22.3,
   "facts": {
    "eps": null,
    "problem_type": "authorization_delayed",
    "service_requested": "cirugía de amígdalas",
-   "events_summary": "La EPS autorizó la cirugía de amígdalas hace dos meses, pero no se le asigna fecha y cada llamada responde que no hay agenda.",
+   "events_summary": "La EPS autorizó la cirugía de amígdalas hace dos meses, pero no se ha asignado fecha y las llamadas repetidas indican que no hay agenda disponible.",
    "relevant_dates": [
     "hace dos meses"
    ],
    "urgent_health_risk": true,
    "special_protection": true,
-   "special_protection_reason": "menor de edad (5 años)",
+   "special_protection_group": "child",
    "writer_is_affected_person": false,
    "writer_relationship": "hija",
    "missing_info": [
-    "fecha exacta de la solicitud de la cirugía",
-    "fecha en la que se autorizó la cirugía",
-    "nombre completo de la EPS",
-    "número de afiliado de la EPS",
-    "número de contacto de la EPS",
-    "copia de la autorización de la cirugía",
-    "documentación médica que respalde la necesidad de la cirugía"
+    "fecha exacta de la solicitud de cirugía",
+    "número de solicitud o radicado",
+    "copia de la autorización de la EPS",
+    "documentación médica que justifique la necesidad de la cirugía",
+    "historial de infecciones y dificultad respiratoria"
    ]
   },
-  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (menor de edad (5 años)) y la demora pone en riesgo inminente la salud o la vida del paciente.",
+  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (menor de edad) y la demora pone en riesgo inminente la salud o la vida del paciente.",
   "passed": true
  },
  {
@@ -87,30 +87,31 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 0,
-  "tokens": 11618,
-  "latency_s": 25.0,
+  "rulings_cited": 3,
+  "quotes_removed": 0,
+  "tokens": 11902,
+  "latency_s": 23.3,
   "facts": {
    "eps": null,
    "problem_type": "authorization_delayed",
    "service_requested": "quimioterapia",
-   "events_summary": "El paciente tiene cáncer de seno y su oncólogo le ordenó quimioterapia hace tres semanas. La EPS no la ha autorizado, indicando que está en revisión. El médico advirtió que no puede esperar más porque el tumor puede crecer.",
+   "events_summary": "El oncólogo ordenó quimioterapia hace tres semanas y la EPS aún no la ha autorizado, indicando que está en revisión. El médico advierte que el tumor puede crecer si se retrasa el tratamiento.",
    "relevant_dates": [
     "hace tres semanas"
    ],
    "urgent_health_risk": true,
    "special_protection": true,
-   "special_protection_reason": "persona con enfermedad grave (cáncer)",
+   "special_protection_group": "serious_illness",
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
-    "fecha exacta de la solicitud de autorización",
-    "fecha de inicio del tratamiento",
-    "si existe orden médica escrita",
-    "si se ha intentado algún otro tipo de gestión con la EPS"
+    "fecha exacta de la orden de quimioterapia",
+    "fecha de la solicitud a la EPS",
+    "estado actual de la revisión",
+    "si existe orden médica escrita"
    ]
   },
-  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (persona con enfermedad grave (cáncer)) y la demora pone en riesgo inminente la salud o la vida del paciente.",
+  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (persona con una enfermedad grave) y la demora pone en riesgo inminente la salud o la vida del paciente.",
   "passed": true
  },
  {
@@ -124,28 +125,31 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 0,
-  "tokens": 16300,
-  "latency_s": 46.1,
+  "rulings_cited": 2,
+  "quotes_removed": 0,
+  "tokens": 12060,
+  "latency_s": 20.5,
   "facts": {
    "eps": null,
    "problem_type": "authorization_delayed",
-   "service_requested": "controles prenatales y ecografía",
-   "events_summary": "Embarazo de 7 meses, EPS no asigna controles prenatales ni ecografía ordenada por ginecólogo; solicitan volver la próxima semana sin conseguir citas.",
-   "relevant_dates": [],
+   "service_requested": "ecografía y controles prenatales",
+   "events_summary": "Embarazada de 7 meses, lleva un mes sin que la EPS le asigne los controles prenatales ni la ecografía ordenada por el ginecólogo; le indican que llame la próxima semana sin que haya citas disponibles.",
+   "relevant_dates": [
+    "hace un mes",
+    "7 meses de embarazo"
+   ],
    "urgent_health_risk": true,
    "special_protection": true,
-   "special_protection_reason": "embarazada",
+   "special_protection_group": "pregnancy",
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
     "fecha exacta de la solicitud de la ecografía",
-    "fecha en que se ordenó el control prenatal",
-    "fecha de la última llamada a la EPS",
-    "si existe orden médica escrita"
+    "fecha exacta en que se le indicó volver a llamar",
+    "detalle de los intentos de contacto realizados"
    ]
   },
-  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (embarazada) y la demora pone en riesgo inminente la salud o la vida del paciente.",
+  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (mujer embarazada) y la demora pone en riesgo inminente la salud o la vida del paciente.",
   "passed": true
  },
  {
@@ -157,32 +161,35 @@
   "norms_ok": true,
   "unknown_norms": [],
   "urls_ok": true,
-  "forbidden_words_ok": true,
-  "forbidden_words": [],
-  "rulings_cited": 2,
-  "tokens": 14851,
-  "latency_s": 34.3,
+  "forbidden_words_ok": false,
+  "forbidden_words": [
+   "nota de Uso"
+  ],
+  "rulings_cited": 3,
+  "quotes_removed": 0,
+  "tokens": 14155,
+  "latency_s": 27.5,
   "facts": {
    "eps": null,
-   "problem_type": "medicine_denied",
+   "problem_type": "authorization_delayed",
    "service_requested": "silla de ruedas",
-   "events_summary": "La silla de ruedas del usuario está rota; el fisiatra le formuló una nueva hace dos meses, pero la EPS la negó porque no está en el plan de beneficios, impidiéndole salir de su casa.",
+   "events_summary": "La silla de ruedas actual está rota; el fisiatra formuló una nueva hace dos meses, pero la EPS la negó por no estar en el plan de beneficios, impidiendo que el usuario salga de su casa.",
    "relevant_dates": [],
    "urgent_health_risk": true,
    "special_protection": true,
-   "special_protection_reason": "persona con discapacidad",
+   "special_protection_group": "disability",
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
-    "fecha exacta de la solicitud a la EPS",
-    "fecha de la formulación de la nueva silla por el fisiatra",
-    "fecha de la respuesta de la EPS negando la silla",
-    "si existe orden médica o prescripción formal",
-    "si se ha intentado algún otro recurso o reclamación previa"
+    "fecha exacta de la formulación de la silla",
+    "fecha exacta de la denegación por parte de la EPS",
+    "nombre de la EPS",
+    "identificación del usuario (para verificar discapacidad)",
+    "detalle del plan de beneficios que la EPS menciona como excluyente"
    ]
   },
   "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (persona con discapacidad) y la demora pone en riesgo inminente la salud o la vida del paciente.",
-  "passed": true
+  "passed": false
  },
  {
   "id": "06_dialisis_interrumpida",
@@ -196,8 +203,9 @@
   "forbidden_words_ok": true,
   "forbidden_words": [],
   "rulings_cited": 0,
-  "tokens": 12251,
-  "latency_s": 21.6,
+  "quotes_removed": 1,
+  "tokens": 14596,
+  "latency_s": 33.9,
   "facts": {
    "eps": null,
    "problem_type": "authorization_delayed",
@@ -206,17 +214,17 @@
    "relevant_dates": [],
    "urgent_health_risk": true,
    "special_protection": true,
-   "special_protection_reason": "persona con enfermedad renal crónica (enfermedad grave y potencialmente mortal)",
+   "special_protection_group": "older_adult",
    "writer_is_affected_person": false,
-   "writer_relationship": "hija/hijo",
+   "writer_relationship": "hija",
    "missing_info": [
     "fecha exacta en que la EPS dejó de autorizar las sesiones",
-    "fecha de inicio de la necesidad de diálisis",
-    "si existe orden médica vigente",
-    "nombre de la clínica actual y anterior"
+    "nombre de la clínica actual y la anterior",
+    "copia de la orden médica o justificación del nefrólogo",
+    "documentación que demuestre la enfermedad renal crónica y la necesidad de diálisis"
    ]
   },
-  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (persona con enfermedad renal crónica (enfermedad grave y potencialmente mortal)) y la demora pone en riesgo inminente la salud o la vida del paciente.",
+  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (adulto mayor) y la demora pone en riesgo inminente la salud o la vida del paciente.",
   "passed": true
  },
  {
@@ -231,25 +239,26 @@
   "forbidden_words_ok": true,
   "forbidden_words": [],
   "rulings_cited": 2,
-  "tokens": 11295,
-  "latency_s": 20.1,
+  "quotes_removed": 0,
+  "tokens": 11874,
+  "latency_s": 20.8,
   "facts": {
    "eps": null,
    "problem_type": "appointment_not_scheduled",
-   "service_requested": "dermatología",
-   "events_summary": "Solicitó cita de dermatología por acné; el médico general la remitió hace un mes y la EPS no ha programado la cita.",
+   "service_requested": "dermatology appointment",
+   "events_summary": "The user, a 35-year-old person, requested a dermatology appointment for acne that has persisted for some time. A general physician referred them a month ago, but the EPS has not yet provided the appointment.",
    "relevant_dates": [
     "hace un mes"
    ],
    "urgent_health_risk": false,
    "special_protection": false,
-   "special_protection_reason": null,
+   "special_protection_group": null,
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
     "fecha exacta de la solicitud de la cita",
     "nombre de la EPS",
-    "número de afiliación o documento de identificación",
+    "número de identificación del usuario",
     "si existe orden médica o referencia escrita"
    ]
   },
@@ -267,12 +276,13 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 1,
-  "tokens": 11900,
-  "latency_s": 21.9,
+  "rulings_cited": 0,
+  "quotes_removed": 1,
+  "tokens": 10474,
+  "latency_s": 17.8,
   "facts": {
    "eps": null,
-   "problem_type": "authorization_delayed",
+   "problem_type": "other",
    "service_requested": "copia de historia clínica",
    "events_summary": "Solicitó copia de historia clínica hace tres semanas para obtener segunda opinión médica; no ha recibido respuesta.",
    "relevant_dates": [
@@ -280,14 +290,15 @@
    ],
    "urgent_health_risk": false,
    "special_protection": false,
-   "special_protection_reason": null,
+   "special_protection_group": null,
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
     "fecha exacta de la solicitud",
+    "fecha de respuesta esperada",
     "nombre completo de la EPS",
     "identificación del solicitante",
-    "detalle de los intentos de contacto y respuesta recibida"
+    "detalle de la solicitud (correo, formato, etc.)"
    ]
   },
   "route_reason": "Procede el derecho de petición porque no hay un riesgo inminente para la salud: primero se le pide a la EPS una respuesta formal y de fondo.",
@@ -304,28 +315,30 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 2,
-  "tokens": 13018,
-  "latency_s": 24.6,
+  "rulings_cited": 1,
+  "quotes_removed": 2,
+  "tokens": 12030,
+  "latency_s": 19.2,
   "facts": {
    "eps": "null",
    "problem_type": "authorization_delayed",
    "service_requested": "plantillas ortopédicas",
-   "events_summary": "El solicitante, de 30 años, tiene una orden médica de un ortopedista para plantillas ortopédicas por pie plano. Radiocó la orden en la EPS hace 20 días, pero la autorización sigue en trámite. Siente dolor leve al caminar mucho.",
+   "events_summary": "El solicitante tiene 30 años y el ortopedista le ordenó plantillas ortopédicas por pie plano. Radiqué la orden en la EPS hace 20 días y la autorización sigue en trámite. Le duelen los pies al caminar mucho.",
    "relevant_dates": [
     "hace 20 días"
    ],
    "urgent_health_risk": false,
    "special_protection": false,
-   "special_protection_reason": null,
+   "special_protection_group": null,
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
-    "fecha exacta de la radiografía de la orden",
+    "fecha exacta de la radiografía",
+    "fecha actual del trámite",
     "nombre de la EPS",
     "nombre del ortopedista",
-    "fecha de la solicitud de autorización",
-    "fecha actual"
+    "diagnóstico específico",
+    "detalle de la orden médica"
    ]
   },
   "route_reason": "Procede el derecho de petición porque no hay un riesgo inminente para la salud: primero se le pide a la EPS una respuesta formal y de fondo.",
@@ -342,23 +355,24 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 0,
-  "tokens": 10828,
-  "latency_s": 17.3,
+  "rulings_cited": 2,
+  "quotes_removed": 0,
+  "tokens": 11087,
+  "latency_s": 14.7,
   "facts": {
    "eps": null,
    "problem_type": "appointment_not_scheduled",
-   "service_requested": "cita de control en medicina general para exámenes de rutina",
+   "service_requested": "cita de control en medicina general",
    "events_summary": "Lleva dos semanas llamando a la EPS y la línea siempre está ocupada o no hay agenda.",
    "relevant_dates": [],
    "urgent_health_risk": false,
    "special_protection": false,
-   "special_protection_reason": null,
+   "special_protection_group": null,
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
-    "fecha exacta de la solicitud de la cita",
-    "si ya existe una orden médica o receta que solicite la cita",
+    "fecha exacta en que se hizo la solicitud de cita",
+    "si ya existe una orden médica o receta que justifique la cita",
     "nombre completo de la EPS"
    ]
   },
@@ -376,29 +390,26 @@
   "urls_ok": true,
   "forbidden_words_ok": true,
   "forbidden_words": [],
-  "rulings_cited": 2,
-  "tokens": 13015,
-  "latency_s": 28.3,
+  "rulings_cited": 1,
+  "quotes_removed": 0,
+  "tokens": 10957,
+  "latency_s": 18.9,
   "facts": {
    "eps": null,
-   "problem_type": "medicine_denied",
+   "problem_type": "authorization_delayed",
    "service_requested": null,
-   "events_summary": "El médico le formuló un antialérgico para rinitis alérgica leve, pero la EPS le indicó que no lo cubre y que lo compre él mismo. Solicita una explicación por escrito del motivo de la denegación.",
+   "events_summary": "El médico recetó un antialérgico para rinitis alérgica leve, pero la EPS indicó que no lo cubre y que lo compre el usuario. El usuario solicita una explicación escrita del motivo de la denegación.",
    "relevant_dates": [],
    "urgent_health_risk": false,
    "special_protection": false,
-   "special_protection_reason": null,
+   "special_protection_group": null,
    "writer_is_affected_person": true,
    "writer_relationship": null,
    "missing_info": [
     "Fecha de la solicitud de la EPS",
+    "Fecha de la receta médica",
     "Fecha de la respuesta de la EPS",
-    "Nombre completo de la EPS",
-    "Número de afiliado o identificación de la EPS",
-    "Nombre del médico que formuló el tratamiento",
-    "Nombre del antialérgico específico",
-    "Si existen órdenes médicas o recetas asociadas",
-    "Si se ha intentado alguna reclamación previa"
+    "Nombre de la EPS"
    ]
   },
   "route_reason": "Procede el derecho de petición porque no hay un riesgo inminente para la salud: primero se le pide a la EPS una respuesta formal y de fondo.",
@@ -416,27 +427,31 @@
   "forbidden_words_ok": true,
   "forbidden_words": [],
   "rulings_cited": 0,
-  "tokens": 11434,
-  "latency_s": 22.5,
+  "quotes_removed": 0,
+  "tokens": 10973,
+  "latency_s": 14.9,
   "facts": {
    "eps": null,
    "problem_type": "appointment_not_scheduled",
    "service_requested": "cita de optometría",
-   "events_summary": "El hermano solicitó una cita de optometría hace tres semanas porque cree que necesita gafas para leer. La EPS no le ha asignado la cita.",
+   "events_summary": "El hermano solicitó una cita de optometría hace tres semanas para evaluar la necesidad de gafas para leer; la EPS no ha programado la cita.",
    "relevant_dates": [
     "hace tres semanas"
    ],
    "urgent_health_risk": false,
    "special_protection": false,
-   "special_protection_reason": null,
+   "special_protection_group": null,
    "writer_is_affected_person": false,
    "writer_relationship": "hermano",
    "missing_info": [
     "fecha exacta de la solicitud",
-    "nombre completo del hermano",
-    "nombre completo del EPS",
-    "si existe orden médica o receta que justifique la cita",
-    "si se ha realizado algún seguimiento o reclamo previo"
+    "fecha límite o fecha programada para la cita",
+    "nombre completo del hermano afectado",
+    "identificación del hermano afectado",
+    "nombre completo de la EPS",
+    "número de afiliación o código de la EPS",
+    "documentación médica que respalde la necesidad de gafas",
+    "si existe orden médica o receta"
    ]
   },
   "route_reason": "Procede el derecho de petición porque no hay un riesgo inminente para la salud: primero se le pide a la EPS una respuesta formal y de fondo.",
