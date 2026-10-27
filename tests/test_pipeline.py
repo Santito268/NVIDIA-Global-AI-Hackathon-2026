@@ -3,6 +3,8 @@
 import re
 from types import SimpleNamespace
 
+import httpx2  # the HTTP library openai uses; only to build its error objects
+import openai
 import pytest
 from pydantic import ValidationError
 
@@ -52,11 +54,63 @@ def test_chat_sends_thinking_switch_to_nebius(monkeypatch):
 
     fake_client = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
     monkeypatch.setattr(config, "LLM_MODE", "live")
-    monkeypatch.setattr(llm, "_client", lambda: fake_client)
+    monkeypatch.setattr(llm, "_client", lambda *args: fake_client)
 
     llm.chat([], "some-model", "intake", thinking=False)
     assert sent["extra_body"] == {"chat_template_kwargs": {"enable_thinking": False}}
     assert sent["temperature"] == 0  # classification steps never change their answer
+
+
+_REQUEST = httpx2.Request("POST", "https://example.test/v1/chat/completions")
+
+
+@pytest.mark.parametrize(
+    ("error", "code"),
+    [
+        (openai.APITimeoutError(request=_REQUEST), "timeout"),
+        (openai.APIConnectionError(request=_REQUEST), "connection"),
+        (
+            openai.APIStatusError(
+                "busy", response=httpx2.Response(503, request=_REQUEST), body=None
+            ),
+            "generic",
+        ),
+    ],
+)
+def test_nebius_errors_become_user_friendly_errors_with_a_code(monkeypatch, error, code):
+    def failing_create(**kwargs):
+        raise error
+
+    fake_client = SimpleNamespace(
+        chat=SimpleNamespace(completions=SimpleNamespace(create=failing_create))
+    )
+    monkeypatch.setattr(config, "LLM_MODE", "live")
+    monkeypatch.setattr(llm, "_client", lambda *args: fake_client)
+    with pytest.raises(llm.LLMError) as raised:
+        llm.chat([], "some-model", "intake")
+    assert raised.value.code == code
+
+
+def test_draft_waits_longer_but_never_retries_on_the_network(monkeypatch):
+    used = []
+
+    def fake_client(timeout, max_retries):
+        used.append((timeout, max_retries))
+        message = SimpleNamespace(content="## Hechos\nx")
+        response = SimpleNamespace(choices=[SimpleNamespace(message=message)], usage=None)
+        return SimpleNamespace(
+            chat=SimpleNamespace(completions=SimpleNamespace(create=lambda **k: response))
+        )
+
+    monkeypatch.setattr(config, "LLM_MODE", "live")
+    monkeypatch.setattr(llm, "_client", fake_client)
+    llm.chat([], "m", "intake")
+    with pytest.raises(llm.LLMError):  # the fake answer lacks sections: incomplete
+        agent.run_draft(_facts(), agent.route_case(_facts()), [])
+    assert used[0] == (config.REQUEST_TIMEOUT_S, config.MAX_RETRIES)
+    assert used[1:] == [(config.DRAFT_TIMEOUT_S, config.DRAFT_MAX_RETRIES)] * 2
+    # Worst wait before an error stays bounded (minutes, not the 8 of before).
+    assert config.DRAFT_TIMEOUT_S * (1 + config.DRAFT_MAX_RETRIES) <= 180
 
 
 @pytest.mark.parametrize(

@@ -20,9 +20,14 @@ TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
 NANO_MODEL: str = os.getenv("NEMOTRON_NANO_MODEL") or "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
 SUPER_MODEL: str = os.getenv("NEMOTRON_SUPER_MODEL") or "nvidia/nemotron-3-super-120b-a12b"
 
-# Request settings
-REQUEST_TIMEOUT_S: float = 60.0
-MAX_RETRIES: int = 3
+# Request settings. Short JSON steps answer in a few seconds, so they wait less and retry.
+# The worst case is what a user would wait before seeing an error: (1 + retries) x timeout.
+REQUEST_TIMEOUT_S: float = 45.0
+MAX_RETRIES: int = 2
+# The draft normally takes 25-35 s. A slow Nebius made it take 317 s with retries (D40), so it
+# gets one long attempt and no network retry: an error after 2.5 min beats a silent 8 min.
+DRAFT_TIMEOUT_S: float = 150.0
+DRAFT_MAX_RETRIES: int = 0
 DEFAULT_MAX_TOKENS: int = 1500
 # Drafting reasons before writing a long document, so it needs more room.
 DRAFT_MAX_TOKENS: int = 8000

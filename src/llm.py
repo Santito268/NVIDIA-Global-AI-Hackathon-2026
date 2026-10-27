@@ -41,9 +41,9 @@ class CallMetrics:
     latency_s: float
 
 
-@lru_cache(maxsize=1)
-def _client() -> openai.OpenAI:
-    """Build the OpenAI-compatible client for Token Factory (retries + timeout built in)."""
+@lru_cache(maxsize=4)
+def _client(timeout: float, max_retries: int) -> openai.OpenAI:
+    """The OpenAI-compatible client for Token Factory; one per (timeout, retries) pair."""
     if not config.NEBIUS_API_KEY or not config.NEBIUS_BASE_URL:
         raise LLMError(
             "Nebius is not configured: set NEBIUS_API_KEY and NEBIUS_BASE_URL.", "config"
@@ -51,8 +51,8 @@ def _client() -> openai.OpenAI:
     return openai.OpenAI(
         api_key=config.NEBIUS_API_KEY,
         base_url=config.NEBIUS_BASE_URL,
-        timeout=config.REQUEST_TIMEOUT_S,
-        max_retries=config.MAX_RETRIES,
+        timeout=timeout,
+        max_retries=max_retries,  # the library waits a little longer before each retry
     )
 
 
@@ -63,6 +63,8 @@ def chat(
     thinking: bool = False,
     max_tokens: int = config.DEFAULT_MAX_TOKENS,
     temperature: float = config.TEMPERATURE,
+    timeout: float = config.REQUEST_TIMEOUT_S,
+    max_retries: int = config.MAX_RETRIES,
 ) -> tuple[str, CallMetrics]:
     """Send a chat request and return the answer text and its metrics.
 
@@ -84,7 +86,7 @@ def chat(
             f"No model configured for step '{step}'. Check the model IDs in .env.", "config"
         )
     try:
-        response = _client().chat.completions.create(
+        response = _client(timeout, max_retries).chat.completions.create(
             model=model,
             messages=messages,
             max_tokens=max_tokens,

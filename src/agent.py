@@ -293,6 +293,8 @@ def run_draft(
             thinking=True,
             max_tokens=config.DRAFT_MAX_TOKENS,
             temperature=config.DRAFT_TEMPERATURE,
+            timeout=config.DRAFT_TIMEOUT_S,
+            max_retries=config.DRAFT_MAX_RETRIES,
         )
         all_metrics.append(metrics)
         sections = extract_sections(text, route.document_type)
