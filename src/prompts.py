@@ -67,6 +67,18 @@ Answer ONLY with a JSON object with these keys:
 summary (3 or 4 sentences: what document it is, who receives it, what it asks for and why),
 key_points (a list of 2 to 4 short sentences with the main things the document asks for)."""
 
+TRANSLATE_SYSTEM = """You translate Colombian legal texts from Spanish into {language} so that
+a reader who does not speak Spanish can understand them.
+
+Rules:
+- Keep the Markdown formatting (headings, lists, bold) exactly as it is.
+- Do not translate or change: text in [BRACKETS], URLs, and quotes between « », which are
+  official sources and must stay in Spanish.
+- Keep the Spanish legal names the first time they appear, with the translation in
+  parentheses, e.g. "acción de tutela (constitutional protection action)".
+- Translate everything else faithfully. Do not add, remove or explain anything.
+- Answer ONLY with the translation."""
+
 # The app builds the fixed parts (parties, annexes, oath, notifications, signature) in
 # src/document.py; the model only writes the sections that need legal reasoning.
 DRAFT_SYSTEM = """You are a Colombian lawyer who writes clear documents for citizens with no

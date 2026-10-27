@@ -78,3 +78,42 @@ def test_pipeline_error_is_shown_without_crashing(monkeypatch):
     assert not at.exception
     assert TEXT["error_message"] in [e.value for e in at.error]
     assert at.session_state.result is None
+
+
+def test_every_language_has_all_the_interface_texts():
+    assert set(UI_TEXT) == set(config.LANGUAGES)
+    for texts in UI_TEXT.values():
+        assert texts.keys() == TEXT.keys()
+
+
+def test_page_starts_in_spanish():
+    at = _app()
+    assert at.segmented_control(key="language").value == "es"
+    assert at.button(key="generate").label == TEXT["generate_button"]
+
+
+def test_switching_to_english_translates_the_results_once(monkeypatch):
+    calls = []
+    real_translate = agent.run_translate
+
+    def counting_translate(text, language):
+        calls.append(language)
+        return real_translate(text, language)
+
+    monkeypatch.setattr(agent, "run_translate", counting_translate)
+    at = _app()
+    at.button(key="sample").click().run()
+    at.button(key="generate").click().run()
+    assert calls == []  # Spanish: nothing to translate
+
+    at.segmented_control(key="language").set_value("en").run()
+    english = UI_TEXT["en"]
+    assert at.button(key="generate").label == english["generate_button"]
+    assert [tab.label for tab in at.tabs][0] == english["tab_explanation"]
+    assert english["translation_notice"] in [i.value for i in at.info]
+    assert "[Example translation]" in _all_text(at)
+    assert calls == ["English", "English"]  # explanation + document
+
+    at.segmented_control(key="language").set_value("es").run()
+    at.segmented_control(key="language").set_value("en").run()
+    assert len(calls) == 2  # cached: switching back and forth costs nothing

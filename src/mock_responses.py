@@ -63,6 +63,10 @@ MOCK_RESPONSES: dict[str, str] = {
     "Que el juez tome una medida provisional, es decir, una orden urgente mientras decide."
   ]
 }""",
+    "translate": """### [Example translation]
+This is a sample English translation shown in demo mode. In live mode, Nemotron Nano
+translates the real Spanish text here. Placeholders such as [NOMBRE] stay as they are.
+""",
     "research": """{
   "queries": [
     "tutela negación de medicamentos EPS",

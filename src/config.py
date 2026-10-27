@@ -29,6 +29,12 @@ DRAFT_MAX_TOKENS: int = 8000
 
 # Limits that protect credits on the public demo
 MAX_INPUT_CHARS: int = 2000
+# Interface languages. The pipeline always works in Spanish (SOURCE_LANGUAGE); results are
+# translated by Nano only when another language is chosen. To add one: a line here plus its
+# texts in src/ui_text.py.
+SOURCE_LANGUAGE: str = "es"
+LANGUAGES: dict[str, str] = {"es": "Español", "en": "English"}
+
 # Each case costs ~13k tokens and 3 Tavily searches: protects the public demo's credits.
 MAX_CASES_PER_SESSION: int = 3
 MAX_SEARCHES_PER_CASE: int = 3

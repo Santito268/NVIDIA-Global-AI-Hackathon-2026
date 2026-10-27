@@ -1,4 +1,8 @@
-"""Fixed interface texts, one dictionary per language (no model involved)."""
+"""Fixed interface texts, one dictionary per language (no model involved).
+
+Every language must have the same keys (a test checks it). To add a language, copy the
+"en" block, translate it and add the language to config.LANGUAGES.
+"""
 
 UI_TEXT: dict[str, dict[str, str]] = {
     "es": {
@@ -23,6 +27,7 @@ UI_TEXT: dict[str, dict[str, str]] = {
             "Ejemplo: A mi papá de 72 años le formularon insulina hace tres semanas y la EPS "
             "no se la ha entregado..."
         ),
+        "input_language_note": "",
         "sample_button": "Usar un caso de ejemplo",
         "generate_button": "Generar documento",
         "empty_input": "Escribe qué pasó con tu EPS antes de generar el documento.",
@@ -49,6 +54,9 @@ UI_TEXT: dict[str, dict[str, str]] = {
         "to_fill": "Espacios que debes llenar",
         "next_steps": "Qué hacer después",
         "download": "Descargar documento (.md)",
+        "translating": "Traduciendo con Nemotron Nano…",
+        "translation_notice": "",
+        "translation_error": "No se pudo traducir. Se muestra la versión en español.",
         "sources_intro": (
             "Estos son los textos que encontró la búsqueda en sitios oficiales. Las citas del "
             "documento deben aparecer aquí palabra por palabra: compruébalas."
@@ -58,8 +66,79 @@ UI_TEXT: dict[str, dict[str, str]] = {
         "metrics_intro": "Modelo, tokens y tiempo de cada paso.",
         "total": "Total: {tokens} tokens en {seconds:.1f} s.",
     },
+    "en": {
+        "title": "Tutela Fácil EPS",
+        "tagline": (
+            "Tell us about your problem with your Colombian health insurer (EPS) and we prepare "
+            "a formal petition (derecho de petición) or a constitutional protection action "
+            "(tutela), ready to file, with verified legal grounds explained in plain words."
+        ),
+        "legal_notice": (
+            "**This is not legal advice.** It is a support tool: review the document and, if "
+            "you can, check it with a lawyer or a free legal clinic before filing it."
+        ),
+        "privacy_notice": (
+            "**Privacy:** what you write is sent to Nemotron (on Nebius) to be processed. Do "
+            "not write names, ID numbers, addresses or phone numbers: the document has blanks "
+            "for you to fill in."
+        ),
+        "mock_notice": "Demo mode: answers are examples and no AI is used.",
+        "input_label": "What happened with your EPS?",
+        "input_placeholder": (
+            "Ejemplo: A mi papá de 72 años le formularon insulina hace tres semanas y la EPS "
+            "no se la ha entregado..."
+        ),
+        "input_language_note": (
+            "The app works in Spanish, the language of Colombian courts. Try the sample case, "
+            "or write in Spanish."
+        ),
+        "sample_button": "Use a sample case",
+        "generate_button": "Generate document",
+        "empty_input": "Describe what happened with your EPS before generating the document.",
+        "limit_reached": (
+            "You reached the limit of {limit} cases for this demo. Thanks for trying it."
+        ),
+        "cases_left": "Cases left in this session: {left} of {limit}.",
+        "status_running": "Preparing your document…",
+        "status_done": "Done! Your document is below.",
+        "status_error": "The document could not be finished.",
+        "step_intake": "Understanding your case (Nemotron Nano)…",
+        "step_route": "Choosing the right document (Nemotron Nano)…",
+        "step_research": "Searching rulings on official sites (Nemotron Super + Tavily)…",
+        "step_draft": "Writing the document (Nemotron Super)…",
+        "step_explain": "Explaining it in plain words (Nemotron Nano)…",
+        "error_message": "Something went wrong. Please try again in a moment.",
+        "tab_explanation": "Explanation",
+        "tab_document": "Document",
+        "tab_sources": "Sources",
+        "tab_metrics": "Metrics",
+        "document_type": "Recommended document",
+        "summary": "In plain words",
+        "key_points": "What the document asks for",
+        "to_fill": "Blanks you must fill in",
+        "next_steps": "What to do next",
+        "download": "Download the Spanish document to file (.md)",
+        "translating": "Translating with Nemotron Nano…",
+        "translation_notice": (
+            "Reference translation by Nemotron Nano to help you understand the document. "
+            "File the Spanish version."
+        ),
+        "translation_error": "The translation failed. Showing the Spanish version.",
+        "sources_intro": (
+            "These are the texts the search found on official Colombian sites (in Spanish). "
+            "Every quote in the document must appear here word for word: check them."
+        ),
+        "no_sources": "The search found no rulings. The document relies on the laws only.",
+        "cited": "Quoted in the document",
+        "metrics_intro": "Model, tokens and time of each step.",
+        "total": "Total: {tokens} tokens in {seconds:.1f} s.",
+    },
 }
 
 DOCUMENT_NAMES: dict[str, dict[str, str]] = {
     "es": {"tutela": "Acción de tutela", "derecho_de_peticion": "Derecho de petición"},
+    "en": {
+        "tutela": "Acción de tutela (constitutional protection action)",
+        "derecho_de_peticion": "Derecho de petición (formal petition)",
+    },
 }

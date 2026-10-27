@@ -214,6 +214,24 @@ def run_explain(
     return chat_json(messages, config.NANO_MODEL, "explain", Explanation, thinking=False)
 
 
+def run_translate(text: str, language: str) -> tuple[str, list[CallMetrics]]:
+    """Translate a Spanish result into `language` (a name such as "English") with Nano."""
+    messages = [
+        {"role": "system", "content": prompts.TRANSLATE_SYSTEM.format(language=language)},
+        {"role": "user", "content": text},
+    ]
+    translation, metrics = chat(
+        messages,
+        config.NANO_MODEL,
+        "translate",
+        thinking=False,
+        max_tokens=config.DRAFT_MAX_TOKENS,
+    )
+    if not translation:
+        raise LLMError("The translation came back empty. Please try again.")
+    return translation, [metrics]
+
+
 def run_case(description: str, on_step: Callable[[str], None] | None = None) -> CaseResult:
     """Run every pipeline step for one case; `on_step(name)` is called before each step."""
     notify = on_step or (lambda _step: None)
