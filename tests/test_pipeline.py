@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from src import agent, config, llm
-from src.schemas import CaseFacts, RouteDecision
+from src.schemas import CaseFacts, RouteDecision, SearchPlan, Source
 
 
 @pytest.fixture(autouse=True)
@@ -60,7 +60,50 @@ def test_run_case_in_mock_mode():
     result = agent.run_case("La EPS no me entrega un medicamento.")
     assert isinstance(result.facts, CaseFacts)
     assert result.route.document_type in ("tutela", "derecho_de_peticion")
-    assert [m.step for m in result.metrics] == ["intake", "route"]
+    assert result.queries and result.sources
+    assert [m.step for m in result.metrics] == ["intake", "route", "research"]
+
+
+def _fake_research(monkeypatch, queries: list[str], results_by_query: dict[str, list[Source]]):
+    """Make Super 'answer' with `queries` and the search tool return canned sources."""
+    plan = SearchPlan(queries=queries)
+    monkeypatch.setattr(agent, "chat_json", lambda *a, **k: (plan, []))
+    searched: list[str] = []
+
+    def fake_search(query):
+        searched.append(query)
+        return results_by_query.get(query, [])
+
+    monkeypatch.setattr(agent, "search_web", fake_search)
+    return searched
+
+
+def _route() -> RouteDecision:
+    return RouteDecision(document_type="tutela", reason="x")
+
+
+def _facts() -> CaseFacts:
+    return CaseFacts(
+        problem_type="medicine_denied",
+        events_summary="x",
+        urgent_health_risk=True,
+        special_protection=False,
+    )
+
+
+def test_research_runs_at_most_the_configured_searches(monkeypatch):
+    searched = _fake_research(monkeypatch, ["q1", "q2", "q3", "q4", "q5"], {})
+    agent.run_research(_facts(), _route())
+    assert searched == ["q1", "q2", "q3"]
+
+
+def test_research_removes_duplicate_urls(monkeypatch):
+    same = Source(title="T", url="https://corteconstitucional.gov.co/a", snippet="s")
+    other = Source(title="U", url="https://secretariasenado.gov.co/b", snippet="s")
+    _fake_research(monkeypatch, ["q1", "q2"], {"q1": [same], "q2": [same, other]})
+
+    _, sources, _ = agent.run_research(_facts(), _route())
+    assert [s.url for s in sources] == [same.url, other.url]
 
 
 @pytest.mark.parametrize("text", ["", "   ", "x" * (config.MAX_INPUT_CHARS + 1)])

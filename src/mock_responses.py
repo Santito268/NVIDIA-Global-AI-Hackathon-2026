@@ -29,4 +29,10 @@ MOCK_RESPONSES: dict[str, str] = {
   "document_type": "tutela",
   "reason": "La negativa pone en riesgo la salud de un adulto mayor, por eso procede la tutela."
 }""",
+    "research": """{
+  "queries": [
+    "tutela negación de medicamentos EPS",
+    "derecho fundamental a la salud adulto mayor"
+  ]
+}""",
 }

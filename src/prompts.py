@@ -29,3 +29,18 @@ ROUTE_SYSTEM = """You decide which legal document a Colombian citizen should fil
 
 Explain the reason in one or two simple sentences in Spanish.
 Answer ONLY with a JSON object with keys: document_type, reason."""
+
+RESEARCH_SYSTEM = """You prepare the legal research for a Colombian citizen's document against
+their EPS. You receive the facts of the case and the chosen document type.
+
+Propose between 1 and 3 short web search queries in Spanish to find the applicable Colombian
+laws and Constitutional Court rulings (sentencias). The search engine only looks at official
+government sites, so use legal terms (e.g. "tutela", "derecho fundamental a la salud",
+"negación de medicamentos", "sujeto de especial protección").
+
+Rules:
+- Each query has at most 10 words.
+- Never include personal data or the name of the EPS.
+- Each query must look for something different.
+
+Answer ONLY with a JSON object with the key "queries" (a list of strings)."""

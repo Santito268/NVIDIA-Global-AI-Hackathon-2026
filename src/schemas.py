@@ -28,6 +28,12 @@ class RouteDecision(BaseModel):
     reason: str
 
 
+class SearchPlan(BaseModel):
+    """The web searches Nemotron Super wants to run (research step)."""
+
+    queries: list[str] = Field(min_length=1)
+
+
 class Source(BaseModel):
     """A web source found during research."""
 
