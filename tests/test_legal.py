@@ -1,6 +1,6 @@
 """Mini legal code tests: structure and how the draft step uses it (offline)."""
 
-from src import agent, config, legal
+from src import config, legal, verify
 
 
 def test_every_article_is_complete_and_points_to_a_known_source():
@@ -29,6 +29,6 @@ def test_prompt_block_mentions_key_articles():
 def test_corpus_url_survives_the_unverified_url_filter(monkeypatch):
     monkeypatch.setattr(config, "LLM_MODE", "mock")
     url = next(iter(legal.corpus_urls()))
-    body, cited = agent.remove_unverified_urls(f"Ver {url}", [])
+    body, cited = verify.remove_unverified_urls(f"Ver {url}", [])
     assert url in body
     assert cited == [url]

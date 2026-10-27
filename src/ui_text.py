@@ -221,11 +221,3 @@ UI_TEXT: dict[str, dict[str, str]] = {
         "footer_code": "Code on GitHub",
     },
 }
-
-DOCUMENT_NAMES: dict[str, dict[str, str]] = {
-    "es": {"tutela": "Acción de tutela", "derecho_de_peticion": "Derecho de petición"},
-    "en": {
-        "tutela": "Acción de tutela (constitutional protection action)",
-        "derecho_de_peticion": "Derecho de petición (formal petition)",
-    },
-}

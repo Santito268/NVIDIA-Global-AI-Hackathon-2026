@@ -1,40 +1,19 @@
-"""The pipeline: intake -> route (code) -> research -> draft -> explain."""
+"""The pipeline: intake -> route (code) -> research -> draft -> explain.
+
+The checks on the draft live in src/verify.py and the translation in src/translate.py.
+"""
 
 import json
-import re
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from src import config, legal, prompts
-from src.document import build_document, extract_sections
+from src.document import DOCUMENT_NAMES, build_document, extract_sections
 from src.llm import CallMetrics, LLMError, chat, chat_json
-from src.schemas import (
-    CaseFacts,
-    DraftDocument,
-    Explanation,
-    ExplanationText,
-    RouteDecision,
-    SearchPlan,
-    Source,
-)
+from src.schemas import CaseFacts, DraftDocument, Explanation, RouteDecision, SearchPlan, Source
 from src.tools import search_web
-
-DOCUMENT_TITLES = {"tutela": "Acción de tutela", "derecho_de_peticion": "Derecho de petición"}
-URL_PATTERN = re.compile(r"https?://[^\s)\]>]+")
-REMOVED_URL_NOTE = "[enlace eliminado: no proviene de una fuente verificada]"
-QUOTE_PATTERN = re.compile(r"«([^«»]+)»")
-REMOVED_QUOTE_NOTE = "[cita eliminada: no aparece en la fuente]"
-MIN_QUOTE_WORDS = 6  # the shortest excerpt of the legal code has 6 words
-ITEM_START_PATTERN = re.compile(r"^(?:[-*]|\d+[.)])\s")
-PLACEHOLDER_PATTERN = re.compile(r"\[[A-ZÁÉÍÓÚÑ ]+\]")
-# Text the translation must never touch: quotes, URLs and blanks. Each one is swapped for a
-# numbered token before translating and put back afterwards.
-PROTECTED_PATTERN = re.compile(
-    "|".join(p.pattern for p in (QUOTE_PATTERN, URL_PATTERN, PLACEHOLDER_PATTERN))
-)
-TOKEN_PATTERN = re.compile(r"⟦\d+⟧")
-SECTION_MARKER_PATTERN = re.compile(r"^⟦S(\d+)⟧[ \t]*$", re.MULTILINE)
+from src.verify import check_section, find_placeholders
 
 # Why the document fits the case: hand-written in every language, chosen by route_case's rule.
 ROUTE_REASONS: dict[str, dict[str, str]] = {
@@ -208,62 +187,6 @@ def run_research(
     return queries, list(sources.values()), metrics
 
 
-def remove_unverified_urls(text: str, sources: list[Source]) -> tuple[str, list[str]]:
-    """Replace every URL not found by research nor in the legal code; return text and URLs kept."""
-    known = {s.url for s in sources} | legal.corpus_urls()
-    cited: list[str] = []
-
-    def check(match: re.Match) -> str:
-        url = match.group(0).rstrip(".,;:")
-        if url in known:
-            if url not in cited:
-                cited.append(url)
-            return match.group(0)
-        return REMOVED_URL_NOTE
-
-    return URL_PATTERN.sub(check, text), cited
-
-
-def _normalize(text: str) -> str:
-    """Compare quotes ignoring case, extra spaces and edge punctuation or ellipses."""
-    return " ".join(text.split()).casefold().strip(" .,;:…")
-
-
-def remove_unverified_quotes(text: str, sources: list[Source]) -> str:
-    """Replace every «quote» that is not copied word for word from a snippet or the legal code."""
-    known = [_normalize(s.snippet) for s in sources]
-    known += [_normalize(e) for e in legal.corpus_excerpts()]
-
-    def check(match: re.Match) -> str:
-        quote = _normalize(match.group(1))
-        # A live test kept «... insulina glargina ...»: two words found in a snippet prove
-        # nothing. A quote must be a real sentence fragment, with no gaps inside.
-        long_enough = len(quote.split()) >= MIN_QUOTE_WORDS
-        no_gaps = "…" not in quote and "..." not in quote
-        if long_enough and no_gaps and any(quote in k for k in known):
-            return match.group(0)
-        return REMOVED_QUOTE_NOTE
-
-    return QUOTE_PATTERN.sub(check, text)
-
-
-def drop_items_with_removed_quotes(text: str) -> str:
-    """Remove every list item or paragraph whose quote was removed.
-
-    A ruling cited with "[cita eliminada]" proves nothing and looks broken to a judge; the
-    laws from the verified legal code remain as the legal grounds.
-    """
-    blocks: list[list[str]] = []
-    for line in text.split("\n"):
-        starts_block = not line.strip() or ITEM_START_PATTERN.match(line)
-        if not blocks or starts_block or not blocks[-1][-1].strip():
-            blocks.append([line])
-        else:
-            blocks[-1].append(line)  # continuation of a multi-line item
-    kept = [block for block in blocks if not any(REMOVED_QUOTE_NOTE in ln for ln in block)]
-    return "\n".join(line for block in kept for line in block)
-
-
 def run_draft(
     facts: CaseFacts, route: RouteDecision, sources: list[Source]
 ) -> tuple[DraftDocument, list[CallMetrics]]:
@@ -306,21 +229,15 @@ def run_draft(
     checked: dict[str, str] = {}
     cited: list[str] = []
     for heading, content in sections.items():
-        content = drop_items_with_removed_quotes(remove_unverified_quotes(content, sources))
-        checked[heading], urls = remove_unverified_urls(content, sources)
+        checked[heading], urls = check_section(content, sources)
         cited += [url for url in urls if url not in cited]
     draft = DraftDocument(
-        title=DOCUMENT_TITLES[route.document_type],
+        title=DOCUMENT_NAMES[config.SOURCE_LANGUAGE][route.document_type],
         body_markdown=build_document(route.document_type, facts, checked),
         sections=checked,
         cited_urls=cited,
     )
     return draft, all_metrics
-
-
-def find_placeholders(text: str) -> list[str]:
-    """List the [PLACEHOLDERS] the citizen still has to fill in, in order of appearance."""
-    return list(dict.fromkeys(PLACEHOLDER_PATTERN.findall(text)))
 
 
 def run_explain(
@@ -333,77 +250,6 @@ def run_explain(
         {"role": "user", "content": json.dumps(case, ensure_ascii=False)},
     ]
     return chat_json(messages, config.NANO_MODEL, "explain", Explanation, thinking=False)
-
-
-def protect(text: str) -> tuple[str, list[str]]:
-    """Swap quotes, URLs and blanks for tokens ⟦1⟧, ⟦2⟧...; return the text and the originals."""
-    originals: list[str] = []
-
-    def swap(match: re.Match) -> str:
-        originals.append(match.group(0))
-        return f"⟦{len(originals)}⟧"
-
-    return PROTECTED_PATTERN.sub(swap, text), originals
-
-
-def restore(text: str, originals: list[str]) -> str:
-    """Put the originals back; fail if the translation lost, repeated or invented a token."""
-    expected = [f"⟦{i}⟧" for i in range(1, len(originals) + 1)]
-    if sorted(TOKEN_PATTERN.findall(text)) != sorted(expected):
-        raise LLMError("The translation changed protected text. Showing the Spanish version.")
-    for token, original in zip(expected, originals, strict=True):
-        text = text.replace(token, original)
-    return text
-
-
-def run_translate_sections(
-    sections: dict[str, str], language: str
-) -> tuple[dict[str, str], list[CallMetrics]]:
-    """Translate only the model's sections into `language` (e.g. "English"), in one Nano call.
-
-    The fixed parts are hand-written per language (src/document.py), so they never reach the
-    model. Quotes, URLs and blanks are protected with tokens; each section starts with a
-    marker ⟦S1⟧, ⟦S2⟧... so the answer can be split back into the same sections.
-    """
-    headings = list(sections)
-    joined = "\n\n".join(f"⟦S{i}⟧\n{sections[h]}" for i, h in enumerate(headings, 1))
-    protected, originals = protect(joined)
-    messages = [
-        {"role": "system", "content": prompts.TRANSLATE_SECTIONS_SYSTEM.format(language=language)},
-        {"role": "user", "content": protected},
-    ]
-    translation, metrics = chat(
-        messages,
-        config.NANO_MODEL,
-        "translate_sections",
-        thinking=False,
-        max_tokens=config.DRAFT_MAX_TOKENS,
-    )
-    parts = SECTION_MARKER_PATTERN.split(restore(translation, originals))
-    # split() gives [text before ⟦S1⟧, "1", section 1, "2", section 2, ...]
-    numbers, texts = parts[1::2], parts[2::2]
-    if numbers != [str(i) for i in range(1, len(headings) + 1)]:
-        raise LLMError("The translation lost a section. Showing the Spanish version.")
-    return {h: text.strip() for h, text in zip(headings, texts, strict=True)}, [metrics]
-
-
-def run_translate_explanation(
-    text: ExplanationText, language: str
-) -> tuple[ExplanationText, list[CallMetrics]]:
-    """Translate only the case-specific parts of the explanation, as validated JSON (Nano)."""
-    messages = [
-        {
-            "role": "system",
-            "content": prompts.TRANSLATE_EXPLANATION_SYSTEM.format(language=language),
-        },
-        {"role": "user", "content": text.model_dump_json()},
-    ]
-    translation, metrics = chat_json(
-        messages, config.NANO_MODEL, "translate_explanation", ExplanationText, thinking=False
-    )
-    if len(translation.key_points) != len(text.key_points):
-        raise LLMError("The translation lost a key point. Showing the Spanish version.")
-    return translation, metrics
 
 
 def run_case(description: str, on_step: Callable[[str], None] | None = None) -> CaseResult:

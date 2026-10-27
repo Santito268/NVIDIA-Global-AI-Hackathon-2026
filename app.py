@@ -8,19 +8,13 @@ from pathlib import Path
 import streamlit as st
 
 from src import config, legal, ui_style
-from src.agent import (
-    NEXT_STEPS,
-    CaseResult,
-    route_reason,
-    run_case,
-    run_translate_explanation,
-    run_translate_sections,
-)
-from src.document import build_document, localize_placeholders
+from src.agent import NEXT_STEPS, CaseResult, route_reason, run_case
+from src.document import DOCUMENT_NAMES, build_document, localize_placeholders
 from src.llm import LLMError
 from src.schemas import ExplanationText
 from src.tools import SearchError
-from src.ui_text import DOCUMENT_NAMES, UI_TEXT
+from src.translate import run_translate_explanation, run_translate_sections
+from src.ui_text import UI_TEXT
 
 ROOT = Path(__file__).resolve().parent
 SAMPLES_DIR = ROOT / "data" / "samples"

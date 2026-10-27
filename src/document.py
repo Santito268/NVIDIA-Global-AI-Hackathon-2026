@@ -13,6 +13,14 @@ import re
 
 from src.schemas import CaseFacts
 
+DOCUMENT_NAMES: dict[str, dict[str, str]] = {
+    "es": {"tutela": "Acción de tutela", "derecho_de_peticion": "Derecho de petición"},
+    "en": {
+        "tutela": "Acción de tutela (constitutional protection action)",
+        "derecho_de_peticion": "Derecho de petición (formal petition)",
+    },
+}
+
 MODEL_SECTIONS: dict[str, list[str]] = {
     "tutela": [
         "Hechos",

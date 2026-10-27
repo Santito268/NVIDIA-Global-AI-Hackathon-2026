@@ -119,8 +119,9 @@ flowchart TD
 ```
 
 Code map: `app.py` (interface) · `src/ui_text.py` (hand-written Spanish and English texts) ·
-`src/ui_style.py` (styles and animations) · `src/agent.py` (pipeline and checks) · `src/document.py`
-(fixed document parts) · `src/llm.py` (Nebius client) · `src/tools.py` (Tavily) ·
+`src/ui_style.py` (styles and animations) · `src/agent.py` (pipeline steps) · `src/verify.py`
+(quote and URL checks) · `src/translate.py` (on-demand translation with protected tokens) ·
+`src/document.py` (fixed document parts) · `src/llm.py` (Nebius client) · `src/tools.py` (Tavily) ·
 `src/prompts.py` · `src/legal.py` + `data/legal/mini_codigo.json` · `evals/` (evaluation set).
 
 ## Metrics and evaluation

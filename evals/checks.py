@@ -2,7 +2,7 @@
 
 import re
 
-from src import agent, legal
+from src import legal, verify
 from src.agent import CaseResult
 
 # Every "Ley N de AAAA" / "Decreto N de AAAA" (and similar) mentioned in a document.
@@ -60,7 +60,7 @@ def check_case(result: CaseResult, expected: dict) -> dict:
         "special_protection_ok": result.facts.special_protection == expected["special_protection"],
         "norms_ok": not norms,
         "unknown_norms": norms,
-        "urls_ok": agent.REMOVED_URL_NOTE not in body,
+        "urls_ok": verify.REMOVED_URL_NOTE not in body,
         "forbidden_words_ok": not words,
         "forbidden_words": words,
         "rulings_cited": rulings_cited(result),

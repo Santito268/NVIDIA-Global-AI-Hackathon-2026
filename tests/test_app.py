@@ -5,9 +5,10 @@ from pathlib import Path
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from src import agent, config
+from src import agent, config, translate
+from src.document import DOCUMENT_NAMES
 from src.llm import LLMError
-from src.ui_text import DOCUMENT_NAMES, UI_TEXT
+from src.ui_text import UI_TEXT
 
 TEXT = UI_TEXT["es"]
 APP_PATH = Path(__file__).resolve().parent.parent / "app.py"
@@ -158,13 +159,13 @@ def _count_translations(monkeypatch) -> list[str]:
     """Wrap both translation functions so a test can count the calls to Nano."""
     calls: list[str] = []
     for name in ("run_translate_explanation", "run_translate_sections"):
-        real = getattr(agent, name)
+        real = getattr(translate, name)
 
         def counting(text, language, real=real, name=name):
             calls.append(name)
             return real(text, language)
 
-        monkeypatch.setattr(agent, name, counting)
+        monkeypatch.setattr(translate, name, counting)
     return calls
 
 
@@ -223,7 +224,7 @@ def test_failed_translation_falls_back_to_spanish_and_is_not_retried(monkeypatch
         calls.append(language)
         raise LLMError("The translation changed protected text.")
 
-    monkeypatch.setattr(agent, "run_translate_explanation", failing_translate)
+    monkeypatch.setattr(translate, "run_translate_explanation", failing_translate)
     at = _app()
     at.button(key="sample").click().run()
     at.button(key="generate").click().run()

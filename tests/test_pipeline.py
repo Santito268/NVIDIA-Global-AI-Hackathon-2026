@@ -8,7 +8,7 @@ import openai
 import pytest
 from pydantic import ValidationError
 
-from src import agent, config, document, legal, llm
+from src import agent, config, document, legal, llm, translate, verify
 from src.schemas import CaseFacts, ExplanationText, RouteDecision, SearchPlan, Source
 
 
@@ -160,7 +160,7 @@ def test_run_case_in_mock_mode():
 
 def test_find_placeholders_lists_each_one_once_in_order():
     text = "[NOMBRE], cédula [CÉDULA]. Firma: [NOMBRE] [cita eliminada: no aparece en la fuente]"
-    assert agent.find_placeholders(text) == ["[NOMBRE]", "[CÉDULA]"]
+    assert verify.find_placeholders(text) == ["[NOMBRE]", "[CÉDULA]"]
 
 
 @pytest.mark.parametrize(
@@ -192,10 +192,10 @@ def test_next_steps_in_every_language_cite_the_same_numbers():
 
 def test_protect_and_restore_keep_quotes_urls_and_blanks_untouched():
     text = "Firma: [NOMBRE]. En https://x.gov.co/t-1 se lee: «la salud es un derecho»."
-    protected, originals = agent.protect(text)
+    protected, originals = translate.protect(text)
     assert protected == "Firma: ⟦1⟧. En ⟦2⟧ se lee: ⟦3⟧."
     translated = "Signature: ⟦1⟧. At ⟦2⟧ it reads: ⟦3⟧."
-    assert agent.restore(translated, originals) == (
+    assert translate.restore(translated, originals) == (
         "Signature: [NOMBRE]. At https://x.gov.co/t-1 it reads: «la salud es un derecho»."
     )
 
@@ -203,28 +203,28 @@ def test_protect_and_restore_keep_quotes_urls_and_blanks_untouched():
 @pytest.mark.parametrize("broken", ["Signature: ⟦1⟧.", "⟦1⟧ ⟦1⟧ ⟦2⟧", "⟦1⟧ ⟦2⟧ ⟦3⟧"])
 def test_restore_fails_if_the_translation_lost_or_invented_a_token(broken):
     with pytest.raises(llm.LLMError):
-        agent.restore(broken, ["[NOMBRE]", "https://x.gov.co"])
+        translate.restore(broken, ["[NOMBRE]", "https://x.gov.co"])
 
 
 def test_only_the_model_sections_are_sent_to_translation():
     draft = agent.run_case("La EPS no me entrega un medicamento.").draft
     assert list(draft.sections) == document.MODEL_SECTIONS["tutela"]
-    translated, _ = agent.run_translate_sections(draft.sections, "English")
+    translated, _ = translate.run_translate_sections(draft.sections, "English")
     assert translated == draft.sections  # the mock echoes: markers and tokens round-trip
 
 
 def test_sections_translation_fails_if_a_section_marker_is_lost(monkeypatch):
     monkeypatch.setattr(
-        agent, "chat", lambda *a, **k: ("⟦S1⟧\nFacts only", llm.CallMetrics("t", "m", 0, 0, 0))
+        translate, "chat", lambda *a, **k: ("⟦S1⟧\nFacts only", llm.CallMetrics("t", "m", 0, 0, 0))
     )
     with pytest.raises(llm.LLMError):
-        agent.run_translate_sections({"Hechos": "h", "Peticiones": "p"}, "English")
+        translate.run_translate_sections({"Hechos": "h", "Peticiones": "p"}, "English")
 
 
 def test_explanation_translation_must_keep_every_key_point():
     spanish = ExplanationText(summary="s", key_points=["a", "b", "c"])
     with pytest.raises(llm.LLMError):  # the mock answer has only 2 key points
-        agent.run_translate_explanation(spanish, "English")
+        translate.run_translate_explanation(spanish, "English")
 
 
 def test_draft_removes_invented_urls_and_keeps_verified_ones():
@@ -233,11 +233,11 @@ def test_draft_removes_invented_urls_and_keeps_verified_ones():
         "Ver https://corteconstitucional.gov.co/t-1. "
         "También https://www.blog-falso.com/inventada y (https://otro-falso.co/x)."
     )
-    body, cited = agent.remove_unverified_urls(text, [verified])
+    body, cited = verify.remove_unverified_urls(text, [verified])
 
     assert "https://corteconstitucional.gov.co/t-1" in body
     assert "blog-falso" not in body and "otro-falso" not in body
-    assert body.count(agent.REMOVED_URL_NOTE) == 2
+    assert body.count(verify.REMOVED_URL_NOTE) == 2
     assert cited == ["https://corteconstitucional.gov.co/t-1"]
 
 
@@ -253,10 +253,10 @@ def test_quotes_must_be_copied_from_a_snippet_or_the_legal_code():
     law = legal.corpus_excerpts()[0]
     text = f"«la eps debe entregar la insulina» «{law}» «La Corte ordenó entregarla en 48 horas»"
 
-    body = agent.remove_unverified_quotes(text, [source])
+    body = verify.remove_unverified_quotes(text, [source])
     assert "«la eps debe entregar la insulina»" in body
     assert f"«{law}»" in body
-    assert "48 horas" not in body and body.count(agent.REMOVED_QUOTE_NOTE) == 1
+    assert "48 horas" not in body and body.count(verify.REMOVED_QUOTE_NOTE) == 1
 
 
 @pytest.mark.parametrize(
@@ -265,7 +265,7 @@ def test_quotes_must_be_copied_from_a_snippet_or_the_legal_code():
 def test_short_quotes_or_quotes_with_gaps_are_removed(quote):
     snippet = "La EPS debe entregar la insulina glargina hoy mismo al paciente."
     source = Source(title="T", url="https://x.gov.co", snippet=snippet)
-    assert agent.remove_unverified_quotes(quote, [source]) == agent.REMOVED_QUOTE_NOTE
+    assert verify.remove_unverified_quotes(quote, [source]) == verify.REMOVED_QUOTE_NOTE
 
 
 def test_mock_draft_drops_the_invented_quote():
@@ -273,11 +273,11 @@ def test_mock_draft_drops_the_invented_quote():
     assert "«la EPS no puede negar un medicamento formulado»" in body
     assert "nadie dijo" not in body
     assert "Fuente inventada" not in body  # the whole line goes, not only the quote
-    assert agent.REMOVED_QUOTE_NOTE not in body
+    assert verify.REMOVED_QUOTE_NOTE not in body
 
 
 def test_items_with_a_removed_quote_are_dropped_whole():
-    note = agent.REMOVED_QUOTE_NOTE
+    note = verify.REMOVED_QUOTE_NOTE
     text = (
         "- Artículo 49 de la Constitución Política: salud.\n"
         "- En la Sentencia T-1/24\n"
@@ -288,7 +288,7 @@ def test_items_with_a_removed_quote_are_dropped_whole():
         "\n"
         "1. Hecho que se queda."
     )
-    assert agent.drop_items_with_removed_quotes(text) == (
+    assert verify.drop_items_with_removed_quotes(text) == (
         "- Artículo 49 de la Constitución Política: salud.\n"
         "- Artículo 46 de la Constitución Política: tercera edad.\n"
         "\n"
