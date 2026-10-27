@@ -49,6 +49,13 @@ class Source(BaseModel):
     snippet: str
 
 
+class Explanation(BaseModel):
+    """Plain-language explanation of the document for the citizen (explain step)."""
+
+    summary: str = Field(description="3-4 simple sentences: what the document is and asks")
+    key_points: list[str] = Field(min_length=1, max_length=4)
+
+
 class DraftDocument(BaseModel):
     """The ready-to-file document (draft step)."""
 

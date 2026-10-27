@@ -50,6 +50,21 @@ Rules:
 
 Answer ONLY with a JSON object with the key "queries" (a list of strings)."""
 
+EXPLAIN_SYSTEM = """You explain a legal document to a Colombian citizen with no legal training.
+You receive the document type and the full document.
+
+Write in simple Spanish: short sentences, everyday words. If you must use a legal word
+(e.g. "tutela", "agente oficioso", "medida provisional"), explain it in a few words.
+
+Rules:
+- Only describe what the document says. Never add laws, deadlines, legal advice or chances of
+  winning: the app shows the next steps separately.
+- Never write personal data.
+
+Answer ONLY with a JSON object with these keys:
+summary (3 or 4 sentences: what document it is, who receives it, what it asks for and why),
+key_points (a list of 2 to 4 short sentences with the main things the document asks for)."""
+
 # Required sections come from the law itself:
 # - Tutela: Decreto 2591 de 1991, art. 14 (contents) and art. 37 (oath of no other tutela).
 # - Derecho de petición: Ley 1755 de 2015, art. 16 (minimum contents of a petition).

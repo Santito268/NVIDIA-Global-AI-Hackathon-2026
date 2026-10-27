@@ -1,4 +1,4 @@
-"""The pipeline: intake -> route -> research -> draft (explain comes next)."""
+"""The pipeline: intake -> route -> research -> draft -> explain."""
 
 import json
 import re
@@ -7,7 +7,14 @@ from dataclasses import dataclass, field
 
 from src import config, legal, prompts
 from src.llm import CallMetrics, LLMError, chat, chat_json
-from src.schemas import CaseFacts, DraftDocument, RouteDecision, SearchPlan, Source
+from src.schemas import (
+    CaseFacts,
+    DraftDocument,
+    Explanation,
+    RouteDecision,
+    SearchPlan,
+    Source,
+)
 from src.tools import search_web
 
 DOCUMENT_TITLES = {"tutela": "Acción de tutela", "derecho_de_peticion": "Derecho de petición"}
@@ -15,6 +22,31 @@ URL_PATTERN = re.compile(r"https?://[^\s)\]>]+")
 REMOVED_URL_NOTE = "[enlace eliminado: no proviene de una fuente verificada]"
 QUOTE_PATTERN = re.compile(r"«([^«»]+)»")
 REMOVED_QUOTE_NOTE = "[cita eliminada: no aparece en la fuente]"
+PLACEHOLDER_PATTERN = re.compile(r"\[[A-ZÁÉÍÓÚÑ ]+\]")
+
+# Fixed, hand-written next steps: deadlines are legal facts, so the model never writes them.
+# Every legal statement here is in the verified mini legal code (data/legal/mini_codigo.json).
+NEXT_STEPS = {
+    "tutela": [
+        "Llena los espacios entre corchetes y revisa que los hechos sean correctos.",
+        "Firma el documento. Al presentarlo declaras bajo juramento que no has presentado otra "
+        "tutela por los mismos hechos y derechos (art. 37 del Decreto 2591 de 1991).",
+        "Preséntalo ante un juez con los anexos. No necesitas abogado (art. 14 del Decreto 2591 "
+        "de 1991) y todos los días y horas son hábiles para presentarla (art. 1).",
+        "El juez debe decidir dentro de los diez días siguientes, y el plazo para cumplir su "
+        "orden no puede pasar de 48 horas (art. 29 del Decreto 2591 de 1991).",
+        "Guarda una copia con la constancia de que lo presentaste.",
+    ],
+    "derecho_de_peticion": [
+        "Llena los espacios entre corchetes y revisa que los hechos sean correctos.",
+        "Firma el documento y radícalo ante la EPS con los anexos. Guarda una copia con la "
+        "fecha en que lo recibieron.",
+        "Las reglas del derecho de petición también se aplican a las EPS (art. 33 de la Ley "
+        "1755 de 2015).",
+        "Por regla general, la petición debe resolverse dentro de los quince (15) días "
+        "siguientes a su recepción (art. 14 de la Ley 1755 de 2015).",
+    ],
+}
 
 
 @dataclass
@@ -26,6 +58,9 @@ class CaseResult:
     queries: list[str]
     sources: list[Source]
     draft: DraftDocument
+    explanation: Explanation
+    to_fill: list[str]
+    next_steps: list[str]
     metrics: list[CallMetrics] = field(default_factory=list)
 
 
@@ -144,6 +179,23 @@ def run_draft(
     return draft, [metrics]
 
 
+def find_placeholders(text: str) -> list[str]:
+    """List the [PLACEHOLDERS] the citizen still has to fill in, in order of appearance."""
+    return list(dict.fromkeys(PLACEHOLDER_PATTERN.findall(text)))
+
+
+def run_explain(
+    route: RouteDecision, draft: DraftDocument
+) -> tuple[Explanation, list[CallMetrics]]:
+    """Step 5 (Nano): explain the document in plain language."""
+    case = {"document_type": route.document_type, "document": draft.body_markdown}
+    messages = [
+        {"role": "system", "content": prompts.EXPLAIN_SYSTEM},
+        {"role": "user", "content": json.dumps(case, ensure_ascii=False)},
+    ]
+    return chat_json(messages, config.NANO_MODEL, "explain", Explanation, thinking=False)
+
+
 def run_case(description: str) -> CaseResult:
     """Run every pipeline step for one case."""
     description = validate_input(description)
@@ -151,8 +203,19 @@ def run_case(description: str) -> CaseResult:
     route, route_metrics = run_route(facts)
     queries, sources, research_metrics = run_research(facts, route)
     draft, draft_metrics = run_draft(facts, route, sources)
-    metrics = intake_metrics + route_metrics + research_metrics + draft_metrics
-    return CaseResult(facts, route, queries, sources, draft, metrics)
+    explanation, explain_metrics = run_explain(route, draft)
+    metrics = intake_metrics + route_metrics + research_metrics + draft_metrics + explain_metrics
+    return CaseResult(
+        facts,
+        route,
+        queries,
+        sources,
+        draft,
+        explanation,
+        to_fill=find_placeholders(draft.body_markdown),
+        next_steps=NEXT_STEPS[route.document_type],
+        metrics=metrics,
+    )
 
 
 def main() -> None:
@@ -169,6 +232,10 @@ def main() -> None:
         print(f"  - {s.title}\n    {s.url}")
     print("\n" + "=" * 70 + "\n" + result.draft.body_markdown + "\n" + "=" * 70)
     print("Cited sources:", *result.draft.cited_urls, sep="\n  - ")
+    print("\nExplanation:\n" + result.explanation.summary)
+    print("Key points:", *result.explanation.key_points, sep="\n  - ")
+    print("To fill:", ", ".join(result.to_fill))
+    print("Next steps:", *result.next_steps, sep="\n  - ")
     for m in result.metrics:
         tokens = f"{m.prompt_tokens}+{m.completion_tokens}"
         print(f"[{m.step}] {m.model} {tokens} tokens {m.latency_s:.2f}s")

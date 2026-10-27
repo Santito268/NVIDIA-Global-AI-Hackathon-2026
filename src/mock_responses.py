@@ -72,6 +72,13 @@ hechos y derechos.
 ## Firma
 [FIRMA], [NOMBRE], [CÉDULA]
 """,
+    "explain": """{
+  "summary": "Es una acción de tutela: le pides a un juez que proteja la salud de tu familiar.",
+  "key_points": [
+    "Que la EPS entregue la insulina glargina en 48 horas.",
+    "Que el juez tome una medida provisional, es decir, una orden urgente mientras decide."
+  ]
+}""",
     "research": """{
   "queries": [
     "tutela negación de medicamentos EPS",

@@ -63,7 +63,31 @@ def test_run_case_in_mock_mode():
     assert result.route.document_type in ("tutela", "derecho_de_peticion")
     assert result.queries and result.sources
     assert result.draft.title == "Acción de tutela"
-    assert [m.step for m in result.metrics] == ["intake", "route", "research", "draft"]
+    assert [m.step for m in result.metrics] == ["intake", "route", "research", "draft", "explain"]
+    assert result.explanation.summary and result.explanation.key_points
+    assert result.next_steps == agent.NEXT_STEPS["tutela"]
+    assert "[RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR]" in result.to_fill
+
+
+def test_find_placeholders_lists_each_one_once_in_order():
+    text = "[NOMBRE], cédula [CÉDULA]. Firma: [NOMBRE] [cita eliminada: no aparece en la fuente]"
+    assert agent.find_placeholders(text) == ["[NOMBRE]", "[CÉDULA]"]
+
+
+@pytest.mark.parametrize(
+    "deadline",
+    [
+        "dentro de los diez días siguientes",
+        "no puede pasar de 48 horas",
+        "quince (15) días siguientes a su recepción",
+    ],
+)
+def test_next_step_deadlines_match_the_official_text(deadline):
+    official = " ".join(legal.corpus_excerpts()).lower()
+    written = " ".join(step for steps in agent.NEXT_STEPS.values() for step in steps)
+    assert deadline in written
+    key = {"no puede pasar de 48 horas": "exceder de 48 horas"}.get(deadline, deadline)
+    assert key in official
 
 
 def test_draft_removes_invented_urls_and_keeps_verified_ones():
