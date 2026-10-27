@@ -31,16 +31,12 @@ MOCK_RESPONSES: dict[str, str] = {
   "document_type": "tutela",
   "reason": "La negativa pone en riesgo la salud de un adulto mayor, por eso procede la tutela."
 }""",
+    # Only the sections the model writes. The title and the wrong "Partes" are there on
+    # purpose: the app must drop them and build those parts itself.
     "draft": """# ACCIÓN DE TUTELA
 
-Señor(a) Juez de la República (reparto)
-
 ## Partes
-- Accionante: [NOMBRE], identificado(a) con cédula [CÉDULA], residente en
-  [CIUDAD DE RESIDENCIA], quien actúa como agente oficioso de [NOMBRE DEL PACIENTE],
-  identificado(a) con cédula [CÉDULA DEL PACIENTE], porque
-  [RAZÓN POR LA QUE EL PACIENTE NO PUEDE ACTUAR] (artículo 10 del Decreto 2591 de 1991).
-- Accionada: EPS Ejemplo.
+- Accionado actúa como agente oficioso (texto equivocado que la app debe descartar).
 
 ## Hechos
 1. El médico tratante formuló insulina glargina al paciente el 1 de octubre de 2026.
@@ -54,23 +50,11 @@ Señor(a) Juez de la República (reparto)
    suministro de la insulina glargina dentro de las 48 horas siguientes.
 
 ## Fundamentos de derecho
-- Artículo 49 C.P.; artículo 2 de la Ley 1751 de 2015.
-- Sentencia T-000 de 2026 (ejemplo) (https://www.corteconstitucional.gov.co/relatoria/ejemplo-1):
+- Artículo 49 de la Constitución Política: garantiza el acceso a los servicios de salud.
+- En la Sentencia T-000 de 2026 (ejemplo)
+  (https://www.corteconstitucional.gov.co/relatoria/ejemplo-1) se lee:
   «la EPS no puede negar un medicamento formulado».
 - Fuente inventada (https://www.blog-falso.com/no-verificada): «una frase que nadie dijo».
-
-## Pruebas y anexos
-- Copia de la fórmula u orden médica.
-
-## Juramento
-Bajo la gravedad del juramento manifiesto que no he presentado otra tutela por los mismos
-hechos y derechos.
-
-## Notificaciones
-[DIRECCIÓN], [CORREO ELECTRÓNICO], [TELÉFONO]
-
-## Firma
-[FIRMA], [NOMBRE], [CÉDULA]
 """,
     "explain": """{
   "summary": "Es una acción de tutela: le pides a un juez que proteja la salud de tu familiar.",

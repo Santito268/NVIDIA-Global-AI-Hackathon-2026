@@ -6,6 +6,7 @@ import sys
 from dataclasses import dataclass, field
 
 from src import config, legal, prompts
+from src.document import build_document, extract_sections
 from src.llm import CallMetrics, LLMError, chat, chat_json
 from src.schemas import (
     CaseFacts,
@@ -165,18 +166,34 @@ def run_draft(
         {"role": "system", "content": prompts.DRAFT_SYSTEM},
         {"role": "user", "content": user_content},
     ]
-    # Plain text instead of JSON: long documents break easily inside JSON strings.
-    text, metrics = chat(
-        messages, config.SUPER_MODEL, "draft", thinking=True, max_tokens=config.DRAFT_MAX_TOKENS
-    )
-    if not text:
-        raise LLMError("The model returned an empty document. Please try again.")
+    all_metrics: list[CallMetrics] = []
+    sections = None
+    for _ in range(2):  # one retry if a required section is missing
+        # Plain text instead of JSON: long documents break easily inside JSON strings.
+        text, metrics = chat(
+            messages,
+            config.SUPER_MODEL,
+            "draft",
+            thinking=True,
+            max_tokens=config.DRAFT_MAX_TOKENS,
+        )
+        all_metrics.append(metrics)
+        sections = extract_sections(text, route.document_type)
+        if sections:
+            break
+    if not sections:
+        raise LLMError("The model returned an incomplete document. Please try again.")
 
-    body, cited = remove_unverified_urls(remove_unverified_quotes(text, sources), sources)
+    checked = {
+        heading: remove_unverified_quotes(content, sources) for heading, content in sections.items()
+    }
+    body, cited = remove_unverified_urls(
+        build_document(route.document_type, facts, checked), sources
+    )
     draft = DraftDocument(
         title=DOCUMENT_TITLES[route.document_type], body_markdown=body, cited_urls=cited
     )
-    return draft, [metrics]
+    return draft, all_metrics
 
 
 def find_placeholders(text: str) -> list[str]:
