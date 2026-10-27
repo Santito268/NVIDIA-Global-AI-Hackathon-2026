@@ -13,9 +13,9 @@ NEBIUS_API_KEY: str = os.getenv("NEBIUS_API_KEY", "")
 NEBIUS_BASE_URL: str = os.getenv("NEBIUS_BASE_URL", "")
 TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
 
-# Exact model IDs must be copied from the Nebius Token Factory catalog into .env.
-NANO_MODEL: str = os.getenv("NEMOTRON_NANO_MODEL", "")
-SUPER_MODEL: str = os.getenv("NEMOTRON_SUPER_MODEL", "")
+# Exact IDs from the Nebius Token Factory catalog (GET /v1/models). Override in .env if needed.
+NANO_MODEL: str = os.getenv("NEMOTRON_NANO_MODEL") or "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B"
+SUPER_MODEL: str = os.getenv("NEMOTRON_SUPER_MODEL") or "nvidia/nemotron-3-super-120b-a12b"
 
 # Request settings
 REQUEST_TIMEOUT_S: float = 60.0
