@@ -3,6 +3,7 @@
 import json
 import re
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from src import config, legal, prompts
@@ -213,13 +214,19 @@ def run_explain(
     return chat_json(messages, config.NANO_MODEL, "explain", Explanation, thinking=False)
 
 
-def run_case(description: str) -> CaseResult:
-    """Run every pipeline step for one case."""
+def run_case(description: str, on_step: Callable[[str], None] | None = None) -> CaseResult:
+    """Run every pipeline step for one case; `on_step(name)` is called before each step."""
+    notify = on_step or (lambda _step: None)
     description = validate_input(description)
+    notify("intake")
     facts, intake_metrics = run_intake(description)
+    notify("route")
     route, route_metrics = run_route(facts)
+    notify("research")
     queries, sources, research_metrics = run_research(facts, route)
+    notify("draft")
     draft, draft_metrics = run_draft(facts, route, sources)
+    notify("explain")
     explanation, explain_metrics = run_explain(route, draft)
     metrics = intake_metrics + route_metrics + research_metrics + draft_metrics + explain_metrics
     return CaseResult(

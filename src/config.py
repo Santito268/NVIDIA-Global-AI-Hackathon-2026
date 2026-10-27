@@ -29,6 +29,8 @@ DRAFT_MAX_TOKENS: int = 8000
 
 # Limits that protect credits on the public demo
 MAX_INPUT_CHARS: int = 2000
+# Each case costs ~13k tokens and 3 Tavily searches: protects the public demo's credits.
+MAX_CASES_PER_SESSION: int = 3
 MAX_SEARCHES_PER_CASE: int = 3
 RESULTS_PER_SEARCH: int = 3
 MAX_SNIPPET_CHARS: int = 500
