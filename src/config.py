@@ -38,6 +38,9 @@ DRAFT_TEMPERATURE: float = 0.2
 
 # Limits that protect credits on the public demo
 MAX_INPUT_CHARS: int = 2000
+# A real case needs a few words ("La EPS no me entrega la insulina"). Shorter texts ("hola",
+# "test") are rejected by code, before any model call, so they cost nothing.
+MIN_INPUT_WORDS: int = 5
 # Interface languages. The pipeline always works in Spanish (SOURCE_LANGUAGE); results are
 # translated by Nano only when another language is chosen. To add one: a line here plus its
 # texts in src/ui_text.py.

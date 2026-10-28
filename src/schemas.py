@@ -8,6 +8,11 @@ from pydantic import BaseModel, Field
 class CaseFacts(BaseModel):
     """Facts extracted from the user's plain-language description (intake step)."""
 
+    # Decided by Nano inside the intake call it already makes (no extra call). When false,
+    # code stops the case before the expensive steps (Super, Tavily). No default on purpose.
+    is_eps_health_case: bool = Field(
+        description="True only if the text describes a problem getting health care from an EPS"
+    )
     eps: str | None = Field(None, description="Name of the health insurer (EPS)")
     problem_type: Literal[
         "medicine_denied", "appointment_not_scheduled", "authorization_delayed", "other"

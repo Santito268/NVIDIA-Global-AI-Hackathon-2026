@@ -25,9 +25,13 @@ class LLMError(Exception):
     user's language (src/ui_text.py, key "error_<code>").
     """
 
-    def __init__(self, message: str, code: str = "generic") -> None:
+    def __init__(
+        self, message: str, code: str = "generic", metrics: list["CallMetrics"] | None = None
+    ) -> None:
         super().__init__(message)
         self.code = code
+        # Calls already made when the case stopped (e.g. a text that is not an EPS case).
+        self.metrics = metrics or []
 
 
 @dataclass

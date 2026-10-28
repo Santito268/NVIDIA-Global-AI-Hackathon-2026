@@ -1,20 +1,19 @@
 """Streamlit interface: describe a problem with your EPS, get a ready-to-file document."""
 
 import json
-import threading
-from datetime import date
 from pathlib import Path
 
 import streamlit as st
 
 from src import config, legal, ui_style
-from src.agent import NEXT_STEPS, CaseResult, route_reason, run_case
+from src.agent import NEXT_STEPS, CaseResult, route_reason, run_case, validate_input
 from src.document import DOCUMENT_NAMES, build_document, localize_placeholders
 from src.llm import LLMError
 from src.schemas import ExplanationText
 from src.tools import SearchError
 from src.translate import run_translate_explanation, run_translate_sections
 from src.ui_text import UI_TEXT
+from src.usage import DailyCounter
 
 ROOT = Path(__file__).resolve().parent
 SAMPLES_DIR = ROOT / "data" / "samples"
@@ -29,6 +28,8 @@ STEPS = [
     ("draft", "Nemotron Super"),
     ("explain", "Nemotron Nano"),
 ]
+# Errors caused by the text the user wrote: shown as a notice, not as a service failure.
+INPUT_ERRORS = {"too_long", "too_short", "wrong_language", "off_topic"}
 
 
 def language() -> str:
@@ -57,24 +58,18 @@ def init_state() -> None:
 
 
 @st.cache_resource
-def daily_usage() -> dict:
+def daily_usage() -> DailyCounter:
     """One counter shared by every visitor of this server (session limits reset on reload)."""
-    return {"day": None, "cases": 0, "lock": threading.Lock()}
+    return DailyCounter()
 
 
 def daily_cases_left() -> int:
     """Cases the whole app can still run today; the count restarts every day."""
-    usage = daily_usage()
-    with usage["lock"]:
-        if usage["day"] != date.today():
-            usage["day"], usage["cases"] = date.today(), 0
-        return config.MAX_CASES_PER_DAY - usage["cases"]
+    return config.MAX_CASES_PER_DAY - daily_usage().cases()
 
 
 def count_daily_case() -> None:
-    usage = daily_usage()
-    with usage["lock"]:
-        usage["cases"] += 1
+    daily_usage().add()
 
 
 @st.cache_data
@@ -119,6 +114,15 @@ def text_to_process(description: str) -> str:
     return sample_text(key, config.SOURCE_LANGUAGE) if key else description
 
 
+def check_input(description: str) -> str | None:
+    """Error code if the text cannot be a case (code only, no model call), else None."""
+    try:
+        validate_input(description, language())
+    except LLMError as error:
+        return error.code
+    return None
+
+
 def show_stepper(placeholder, current: int) -> None:
     steps = [(t(f"step_{name}"), model) for name, model in STEPS]
     html = ui_style.stepper(t("status_running"), steps, current, t("wait_notice"))
@@ -134,7 +138,9 @@ def generate(description: str) -> bool:
     show_stepper(placeholder, 0)
     try:
         result = run_case(
-            description, on_step=lambda step: show_stepper(placeholder, order.index(step))
+            description,
+            on_step=lambda step: show_stepper(placeholder, order.index(step)),
+            lang=language(),
         )
     except (LLMError, SearchError) as error:
         placeholder.empty()
@@ -363,6 +369,8 @@ def show_case_form() -> None:
             st.warning(t("daily_limit_reached"))
         elif not description:
             st.error(t("empty_input"))
+        elif input_problem := check_input(text_to_process(description)):
+            st.warning(t(f"error_{input_problem}"))  # code check: no credits, no case used
         else:
             # First half: remember the case and redraw the page with every widget disabled.
             st.session_state.pending = text_to_process(description)
@@ -370,6 +378,8 @@ def show_case_form() -> None:
             st.rerun()
     if running:
         run_pending()
+    elif st.session_state.last_error in INPUT_ERRORS:  # the text, not the service, was the problem
+        st.warning(t(f"error_{st.session_state.last_error}"))
     elif st.session_state.last_error:
         st.error(t("error_message"))
         st.caption(t(f"error_{st.session_state.last_error}"))

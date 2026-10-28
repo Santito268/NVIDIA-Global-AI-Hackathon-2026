@@ -21,6 +21,7 @@ def mock_mode(monkeypatch):
 
 def _facts(writer_is_affected_person: bool, eps: str | None = None) -> CaseFacts:
     return CaseFacts(
+        is_eps_health_case=True,
         eps=eps,
         problem_type="medicine_denied",
         events_summary="x",

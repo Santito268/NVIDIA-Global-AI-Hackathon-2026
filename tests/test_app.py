@@ -237,3 +237,72 @@ def test_failed_translation_falls_back_to_spanish_and_is_not_retried(monkeypatch
     at.segmented_control(key="language").set_value("es").run()
     at.segmented_control(key="language").set_value("en").run()
     assert len(calls) == 1
+
+
+def _run_case_spy(monkeypatch) -> list[str]:
+    """Record what the app sends to the pipeline (and still run it in mock mode)."""
+    received = []
+    real_run_case = agent.run_case
+
+    def recording_run_case(description, **kwargs):
+        received.append(description)
+        return real_run_case(description, **kwargs)
+
+    monkeypatch.setattr(agent, "run_case", recording_run_case)
+    return received
+
+
+def test_an_edited_example_is_sent_as_the_user_wrote_it(monkeypatch):
+    received = _run_case_spy(monkeypatch)
+    at = _app()
+    at.button(key="sample").click().run()
+    edited = at.text_area(key="description").value + " Además, vivo en una zona rural."
+    at.text_area(key="description").set_value(edited).run()
+    at.button(key="generate").click().run()
+    assert received == [edited]
+
+
+def test_too_short_text_is_rejected_without_using_a_case(monkeypatch):
+    received = _run_case_spy(monkeypatch)
+    at = _app()
+    at.text_area(key="description").set_value("hola").run()
+    at.button(key="generate").click().run()
+    assert TEXT["error_too_short"] in [w.value for w in at.warning]
+    assert received == [] and at.session_state.cases_run == 0
+
+
+def test_english_text_on_the_spanish_page_asks_to_switch_language(monkeypatch):
+    received = _run_case_spy(monkeypatch)
+    at = _app()
+    english = "My mother is 70 and the EPS has not given her the insulin for a month"
+    at.text_area(key="description").set_value(english).run()
+    at.button(key="generate").click().run()
+    assert TEXT["error_wrong_language"] in [w.value for w in at.warning]
+    assert received == [] and at.session_state.cases_run == 0
+
+    at.segmented_control(key="language").set_value("en").run()
+    at.button(key="generate").click().run()
+    assert received == [english]  # accepted on the English page
+    assert at.session_state.result is not None
+
+
+def test_off_topic_text_shows_a_notice_and_no_document(monkeypatch):
+    def off_topic_run_case(*args, **kwargs):
+        raise LLMError("This text is not a problem with an EPS.", "off_topic")
+
+    monkeypatch.setattr(agent, "run_case", off_topic_run_case)
+    at = _app()
+    at.text_area(key="description").set_value("Dame una receta de arepas con queso").run()
+    at.button(key="generate").click().run()
+
+    assert not at.exception
+    assert TEXT["error_off_topic"] in [w.value for w in at.warning]
+    assert TEXT["error_message"] not in [e.value for e in at.error]
+    assert at.session_state.result is None
+    assert at.session_state.cases_run == 1  # the intake call was spent, so it counts
+
+
+def test_every_error_code_has_a_text_in_every_language():
+    codes = {"empty", "too_long", "too_short", "wrong_language", "off_topic", "invalid"}
+    for lang in config.LANGUAGES:
+        assert all(UI_TEXT[lang][f"error_{code}"] for code in codes)

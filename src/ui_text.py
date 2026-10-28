@@ -73,6 +73,20 @@ UI_TEXT: dict[str, dict[str, str]] = {
         "error_incomplete": "El modelo devolvió un documento incompleto.",
         "error_search_failed": "La búsqueda en sitios oficiales falló.",
         "error_search_limit": "Se acabaron las búsquedas web gratuitas de este mes.",
+        "error_empty": "Escribe qué pasó con tu EPS antes de generar el documento.",
+        "error_too_long": "El texto es demasiado largo. Resúmelo un poco, por favor.",
+        "error_too_short": (
+            "Cuéntanos un poco más: qué necesitas (medicamento, cita, cirugía…), qué hizo la "
+            "EPS y desde cuándo."
+        ),
+        "error_wrong_language": (
+            "Parece que escribiste en inglés. Para escribir tu caso en inglés, cambia la página "
+            "a English (arriba a la derecha); si no, escríbelo en español."
+        ),
+        "error_off_topic": (
+            "Subvenio solo ayuda con problemas de salud con tu EPS (medicamentos, citas, "
+            "cirugías, autorizaciones…). Cuéntanos qué pasó con tu EPS."
+        ),
         "result_title": "Tu documento está listo",
         "tab_explanation": "Explicación",
         "tab_document": "Documento",
@@ -151,9 +165,9 @@ UI_TEXT: dict[str, dict[str, str]] = {
             "has not delivered it..."
         ),
         "input_language_note": (
-            "The document is written in Spanish, the language of Colombian courts. The examples "
-            "are shown in English and the app sends their Spanish original. If you write your "
-            "own case, please write it in Spanish."
+            "The document is written in Spanish, the language of Colombian courts. You can "
+            "write your case in English: Nemotron Nano first translates it into Spanish. The "
+            "examples are shown in English and the app sends their Spanish original."
         ),
         "generate_button": "Generate my document",
         "empty_input": "Describe what happened with your EPS before generating the document.",
@@ -181,6 +195,20 @@ UI_TEXT: dict[str, dict[str, str]] = {
         "error_incomplete": "The model returned an incomplete document.",
         "error_search_failed": "The search on official sites failed.",
         "error_search_limit": "The free web searches for this month are used up.",
+        "error_empty": "Describe what happened with your EPS before generating the document.",
+        "error_too_long": "The text is too long. Please shorten it a little.",
+        "error_too_short": (
+            "Tell us a bit more: what you need (a medicine, appointment, surgery…), what the "
+            "EPS did and since when."
+        ),
+        "error_wrong_language": (
+            "Your text seems to be in English. To write your case in English, switch the page "
+            "to English (top right)."
+        ),
+        "error_off_topic": (
+            "Subvenio only helps with health problems with your EPS (medicines, appointments, "
+            "surgeries, authorizations…). Tell us what happened with your EPS."
+        ),
         "result_title": "Your document is ready",
         "tab_explanation": "Explanation",
         "tab_document": "Document",

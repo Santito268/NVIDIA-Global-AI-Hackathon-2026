@@ -15,6 +15,7 @@ MOCK_SOURCES: list[dict] = [
 
 MOCK_RESPONSES: dict[str, str] = {
     "intake": """{
+  "is_eps_health_case": true,
   "eps": "EPS Ejemplo",
   "problem_type": "medicine_denied",
   "service_requested": "insulina glargina",
@@ -69,6 +70,8 @@ MOCK_RESPONSES: dict[str, str] = {
     # {input} is replaced by the text sent to the model, so the section markers and tokens
     # come back intact and the protect/restore round trip is tested without credits.
     "translate_sections": "{input}",
+    # The user's own case written in English, translated into Spanish before the intake.
+    "translate_input": "[Traducción de ejemplo] {input}",
     "research": """{
   "queries": [
     "tutela negación de medicamentos EPS",

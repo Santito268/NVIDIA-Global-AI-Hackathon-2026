@@ -351,6 +351,7 @@ def _route() -> RouteDecision:
 
 def _facts() -> CaseFacts:
     return CaseFacts(
+        is_eps_health_case=True,
         problem_type="medicine_denied",
         events_summary="x",
         urgent_health_risk=True,
@@ -393,7 +394,79 @@ def test_research_removes_duplicate_urls(monkeypatch):
     assert [s.url for s in sources] == [same.url, other.url]
 
 
-@pytest.mark.parametrize("text", ["", "   ", "x" * (config.MAX_INPUT_CHARS + 1)])
-def test_validate_input_rejects_bad_descriptions(text):
-    with pytest.raises(llm.LLMError):
-        agent.validate_input(text)
+@pytest.mark.parametrize(
+    ("text", "code"),
+    [
+        ("", "empty"),
+        ("   ", "empty"),
+        ("x " * (config.MAX_INPUT_CHARS // 2 + 1), "too_long"),
+        ("hola", "too_short"),
+        ("test test test", "too_short"),
+        ("My mother is 70 and the EPS has not given her the insulin", "wrong_language"),
+    ],
+)
+def test_validate_input_explains_why_a_text_is_rejected(text, code):
+    with pytest.raises(llm.LLMError) as error:
+        agent.validate_input(text, "es")
+    assert error.value.code == code
+
+
+@pytest.mark.parametrize(
+    ("text", "lang"),
+    [
+        ("Mi mamá tiene 70 años y la EPS no le ha dado la insulina", "es"),
+        ("My mother is 70 and the EPS has not given her the insulin", "en"),
+        ("The EPS has not scheduled my appointment with the cardiologist since August", "en"),
+        ("La EPS no me ha programado la cita con el cardiólogo desde agosto", "es"),
+        ("EPS insulina glargina 100 UI urgente ya", "es"),  # no common words: Spanish
+    ],
+)
+def test_detect_language_by_common_words(text, lang):
+    assert agent.detect_language(text) == lang
+
+
+def test_english_case_is_accepted_on_the_english_page():
+    text = "My mother is 70 and the EPS has not given her the insulin"
+    assert agent.validate_input(text, "en") == text
+
+
+def test_english_case_is_translated_before_the_intake(monkeypatch):
+    received = []
+    real_run_intake = agent.run_intake
+
+    def recording_run_intake(description):
+        received.append(description)
+        return real_run_intake(description)
+
+    monkeypatch.setattr(agent, "run_intake", recording_run_intake)
+    result = agent.run_case("My father is 72 and the EPS has not given him his insulin", lang="en")
+    assert received[0].startswith("[Traducción de ejemplo]")  # Nano's Spanish, not the original
+    assert [m.step for m in result.metrics][:2] == ["translate_input", "intake"]
+
+
+def test_spanish_case_on_the_english_page_is_not_translated():
+    result = agent.run_case("La EPS no me entrega un medicamento.", lang="en")
+    assert "translate_input" not in [m.step for m in result.metrics]
+
+
+def test_off_topic_text_stops_after_the_intake(monkeypatch):
+    off_topic = _facts().model_copy(update={"is_eps_health_case": False})
+    intake_metrics = [llm.CallMetrics("intake", "nano", 900, 60, 1.0)]
+    monkeypatch.setattr(agent, "run_intake", lambda description: (off_topic, intake_metrics))
+
+    def must_not_run(*args, **kwargs):
+        raise AssertionError("an off-topic text must never reach Super or Tavily")
+
+    monkeypatch.setattr(agent, "run_research", must_not_run)
+    monkeypatch.setattr(agent, "run_draft", must_not_run)
+    with pytest.raises(llm.LLMError) as error:
+        agent.run_case("Dame una receta de arepas con queso por favor")
+    assert error.value.code == "off_topic"
+    assert error.value.metrics == intake_metrics  # what it cost is still known
+
+
+def test_intake_requires_the_model_to_decide_if_it_is_an_eps_case():
+    data = _facts().model_dump()
+    del data["is_eps_health_case"]
+    with pytest.raises(ValidationError):
+        CaseFacts.model_validate(data)

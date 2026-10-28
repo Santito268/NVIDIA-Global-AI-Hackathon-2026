@@ -43,12 +43,14 @@ def test_mock_case_is_graded():
 def test_every_case_has_an_id_a_description_and_expectations():
     cases = run_eval.load_cases([])
     assert len(cases) == len({case["id"] for case in cases}) >= 10
+    document_keys = {"document_type", "writer_is_affected_person", "special_protection"}
     for case in cases:
         assert case["description"].strip()
-        assert set(case["expected"]) == {
-            "document_type",
-            "writer_is_affected_person",
-            "special_protection",
+        assert case.get("language", "es") in config.LANGUAGES
+        expected = set(case["expected"])
+        # Either a document with its expected facts, or the error that must stop the case.
+        assert expected == {"error"} or document_keys <= expected <= document_keys | {
+            "problem_type"
         }
 
 
@@ -73,3 +75,28 @@ def test_summary_counts_passes_and_errors():
     summary = run_eval.summary_markdown(grades)
     assert summary.startswith("**1/2 cases pass every rule.**")
     assert "| x | error: timeout |" in summary
+
+
+def test_cases_that_must_be_stopped_pass_only_when_stopped(monkeypatch):
+    def stopped(description, **kwargs):
+        metrics = [agent.CallMetrics("intake", "nano", 900, 60, 1.0)]
+        raise agent.LLMError("Not an EPS case.", "off_topic", metrics)
+
+    case = {"id": "x", "description": "receta", "expected": {"error": "off_topic"}}
+    monkeypatch.setattr(agent, "run_case", stopped)
+    [grade] = run_eval.evaluate([case])
+    assert grade["passed"] and grade["tokens"] == 960
+    assert "| x | stopped: off_topic | ✅ |" in run_eval.summary_markdown([grade])
+
+    monkeypatch.undo()  # back to the mock pipeline, which always writes a document
+    monkeypatch.setattr(config, "LLM_MODE", "mock")
+    case["description"] = "La EPS no me entrega un medicamento."
+    [grade] = run_eval.evaluate([case])
+    assert not grade["passed"] and "should have been stopped" in grade["error"]
+
+
+def test_english_cases_are_run_on_the_english_page():
+    [case] = run_eval.load_cases(["14_ecografia_embarazo_ingles"])
+    assert case["language"] == "en"
+    [grade] = run_eval.evaluate([case])
+    assert "error" not in grade  # accepted and translated, not rejected as wrong_language

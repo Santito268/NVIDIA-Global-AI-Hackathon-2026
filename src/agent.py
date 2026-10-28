@@ -4,6 +4,7 @@ The checks on the draft live in src/verify.py and the translation in src/transla
 """
 
 import json
+import re
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -13,7 +14,19 @@ from src.document import DOCUMENT_NAMES, build_document, extract_sections
 from src.llm import CallMetrics, LLMError, chat, chat_json
 from src.schemas import CaseFacts, DraftDocument, Explanation, RouteDecision, SearchPlan, Source
 from src.tools import search_web
+from src.translate import run_translate_input
 from src.verify import check_section, find_placeholders
+
+# Very common words that exist in only one of the two languages (used by detect_language).
+ENGLISH_WORDS = frozenset(
+    "the and of to is was my his her she they it for with have had been not did does "
+    "doesn't didn't won't can't this that but on at an from their them since months weeks "
+    "days ago years old".split()
+)
+SPANISH_WORDS = frozenset(
+    "el la los las de del que y en un una por para con mi su sus es está tiene ha han hace "
+    "pero ya porque desde meses semanas días años le les lo al".split()
+)
 
 # Why the document fits the case: hand-written in every language, chosen by route_case's rule.
 ROUTE_REASONS: dict[str, dict[str, str]] = {
@@ -118,13 +131,35 @@ class CaseResult:
     metrics: list[CallMetrics] = field(default_factory=list)
 
 
-def validate_input(text: str) -> str:
-    """Reject empty or too-long descriptions before spending any credits."""
+def detect_language(text: str) -> str:
+    """Return "en" or "es" by counting very common words of each language (code, no model call).
+
+    Only words that do not exist in the other language count ("no" and "me" are both).
+    A tie, or a text with none of them, counts as Spanish: the intake then decides.
+    """
+    words = re.findall(r"[a-záéíóúñü']+", text.lower())
+    english = sum(word in ENGLISH_WORDS for word in words)
+    spanish = sum(word in SPANISH_WORDS for word in words)
+    return "en" if english > spanish else "es"
+
+
+def validate_input(text: str, lang: str = config.SOURCE_LANGUAGE) -> str:
+    """Reject descriptions that cannot be a case, before spending any credits.
+
+    `lang` is the page language: English text is only accepted on the English page, where
+    the user was told it will be translated.
+    """
     text = text.strip()
     if not text:
-        raise LLMError("Please describe your case.")
+        raise LLMError("Please describe your case.", "empty")
     if len(text) > config.MAX_INPUT_CHARS:
-        raise LLMError(f"Please keep the description under {config.MAX_INPUT_CHARS} characters.")
+        raise LLMError(
+            f"Please keep the description under {config.MAX_INPUT_CHARS} characters.", "too_long"
+        )
+    if len(text.split()) < config.MIN_INPUT_WORDS:
+        raise LLMError("Please describe what happened in a few sentences.", "too_short")
+    if detect_language(text) == "en" and lang != "en":
+        raise LLMError("The text is in English but the page is in Spanish.", "wrong_language")
     return text
 
 
@@ -261,12 +296,27 @@ def run_explain(
     return chat_json(messages, config.NANO_MODEL, "explain", Explanation, thinking=False)
 
 
-def run_case(description: str, on_step: Callable[[str], None] | None = None) -> CaseResult:
-    """Run every pipeline step for one case; `on_step(name)` is called before each step."""
+def run_case(
+    description: str,
+    on_step: Callable[[str], None] | None = None,
+    lang: str = config.SOURCE_LANGUAGE,
+) -> CaseResult:
+    """Run every pipeline step for one case; `on_step(name)` is called before each step.
+
+    `lang` is the page language. A case written in English (only allowed on the English
+    page) is first translated into Spanish by Nano.
+    """
     notify = on_step or (lambda _step: None)
-    description = validate_input(description)
+    description = validate_input(description, lang)
     notify("intake")
-    facts, intake_metrics = run_intake(description)
+    intake_metrics: list[CallMetrics] = []
+    if detect_language(description) == "en":
+        description, intake_metrics = run_translate_input(description, config.LANGUAGES["en"])
+    facts, metrics = run_intake(description)
+    intake_metrics += metrics
+    if not facts.is_eps_health_case:
+        # Stop before Super and Tavily: an off-topic text costs only the intake (~1k tokens).
+        raise LLMError("This text is not a problem with an EPS.", "off_topic", intake_metrics)
     route = route_case(facts)
     notify("research")
     queries, sources, research_metrics = run_research(facts, route)

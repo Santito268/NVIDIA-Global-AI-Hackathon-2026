@@ -72,6 +72,18 @@ def run_translate_sections(
     return {h: text.strip() for h, text in zip(headings, texts, strict=True)}, [metrics]
 
 
+def run_translate_input(text: str, language: str) -> tuple[str, list[CallMetrics]]:
+    """Translate the citizen's own case from `language` (e.g. "English") into Spanish (Nano)."""
+    messages = [
+        {"role": "system", "content": prompts.TRANSLATE_INPUT_SYSTEM.format(language=language)},
+        {"role": "user", "content": text},
+    ]
+    translation, metrics = chat(messages, config.NANO_MODEL, "translate_input", thinking=False)
+    if not translation:
+        raise LLMError("The translation of your case came back empty.", "invalid")
+    return translation, [metrics]
+
+
 def run_translate_explanation(
     text: ExplanationText, language: str
 ) -> tuple[ExplanationText, list[CallMetrics]]:
