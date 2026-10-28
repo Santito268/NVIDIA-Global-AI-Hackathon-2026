@@ -52,7 +52,13 @@ def check_case(result: CaseResult, expected: dict) -> dict:
     body = result.draft.body_markdown
     norms = unknown_norms(body)
     words = forbidden_words(body)
-    return {
+    # Only some cases say which problem type they are (e.g. the "other" case).
+    problem_type = (
+        {"problem_type_ok": result.facts.problem_type == expected["problem_type"]}
+        if "problem_type" in expected
+        else {}
+    )
+    return problem_type | {
         "document_type": result.route.document_type,
         "document_type_ok": result.route.document_type == expected["document_type"],
         "writer_ok": result.facts.writer_is_affected_person

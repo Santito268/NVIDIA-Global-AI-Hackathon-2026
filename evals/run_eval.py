@@ -39,15 +39,39 @@ def cached_search(cache: dict[str, list[dict]]):
     return search
 
 
+def rejection_grade(case_id: str, error: LLMError | SearchError, expected_code: str) -> dict:
+    """Grade a case that must be stopped (e.g. a text that is not about an EPS)."""
+    metrics = getattr(error, "metrics", [])
+    rejected_ok = error.code == expected_code
+    return {
+        "id": case_id,
+        "rejected": error.code,
+        "rejected_ok": rejected_ok,
+        "passed": rejected_ok,
+        "tokens": sum(m.prompt_tokens + m.completion_tokens for m in metrics),
+        "latency_s": round(sum(m.latency_s for m in metrics), 1),
+    }
+
+
 def evaluate(cases: list[dict]) -> list[dict]:
-    """Run every case through the real pipeline and grade it; errors count as failures."""
+    """Run every case through the real pipeline and grade it; errors count as failures,
+    except in cases whose "expected" names the error that must stop them."""
     grades = []
     for case in cases:
         print(f"- {case['id']}…", flush=True)
+        expected_error = case["expected"].get("error")
+        lang = case.get("language", config.SOURCE_LANGUAGE)
         try:
-            result = agent.run_case(case["description"])
+            result = agent.run_case(case["description"], lang=lang)
         except (LLMError, SearchError) as error:
-            grades.append({"id": case["id"], "error": str(error), "passed": False})
+            if expected_error:
+                grades.append(rejection_grade(case["id"], error, expected_error))
+            else:
+                grades.append({"id": case["id"], "error": str(error), "passed": False})
+            continue
+        if expected_error:
+            error = f"should have been stopped ({expected_error}) but produced a document"
+            grades.append({"id": case["id"], "error": error, "passed": False})
             continue
         grade = {"id": case["id"], **check_case(result, case["expected"])}
         grade["passed"] = passed(grade)
@@ -70,19 +94,34 @@ def summary_markdown(grades: list[dict]) -> str:
         if "error" in g:
             rows.append(f"| {g['id']} | error: {g['error']} |" + " |" * 9)
             continue
+        if "rejected" in g:
+            rows.append(
+                f"| {g['id']} | stopped: {g['rejected']} | {_mark(g['rejected_ok'])} |"
+                + " |" * 6
+                + f" {g['tokens']} | {g['latency_s']} |"
+            )
+            continue
         rows.append(
             f"| {g['id']} | {g['document_type']} | {_mark(g['document_type_ok'])} | "
             f"{_mark(g['writer_ok'])} | {_mark(g['special_protection_ok'])} | "
             f"{_mark(g['norms_ok'])} | {_mark(g['urls_ok'])} | {_mark(g['forbidden_words_ok'])} "
             f"| {g['rulings_cited']} | {g['tokens']} | {g['latency_s']} |"
         )
-    ok = [g for g in grades if "error" not in g]
+    stopped = [g for g in grades if "rejected" in g]
+    ok = [g for g in grades if "error" not in g and "rejected" not in g]
     with_rulings = sum(g["rulings_cited"] > 0 for g in ok)
     total = len(grades)
+    documents = total - len(stopped)
     lines = [
         f"**{sum(g['passed'] for g in grades)}/{total} cases pass every rule.** "
-        f"{with_rulings}/{total} documents cite at least one Constitutional Court ruling.",
+        f"{with_rulings}/{documents} documents cite at least one Constitutional Court ruling.",
     ]
+    if stopped:
+        tokens = sum(g["tokens"] for g in stopped) / len(stopped)
+        lines.append(
+            f"{len(stopped)} texts that are not EPS cases were stopped after the intake, "
+            f"spending {tokens:,.0f} tokens on average (no Super call, no search)."
+        )
     if ok:
         removed = sum(g.get("quotes_removed", 0) for g in ok)  # older results lack it
         lines.append(f"The quote filter removed {removed} quotes that were not exact copies.")
