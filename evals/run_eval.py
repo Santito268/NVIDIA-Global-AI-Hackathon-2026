@@ -119,8 +119,8 @@ def summary_markdown(grades: list[dict]) -> str:
     if stopped:
         tokens = sum(g["tokens"] for g in stopped) / len(stopped)
         lines.append(
-            f"{len(stopped)} texts that are not EPS cases were stopped after the intake, "
-            f"spending {tokens:,.0f} tokens on average (no Super call, no search)."
+            f"{len(stopped)} texts that are not EPS cases were stopped before any document was "
+            f"written, spending {tokens:,.0f} tokens on average (no Super call, no search)."
         )
     if ok:
         removed = sum(g.get("quotes_removed", 0) for g in ok)  # older results lack it
