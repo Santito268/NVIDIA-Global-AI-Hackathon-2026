@@ -161,20 +161,20 @@
   "norms_ok": true,
   "unknown_norms": [],
   "urls_ok": true,
-  "forbidden_words_ok": false,
-  "forbidden_words": [
-   "nota de Uso"
-  ],
-  "rulings_cited": 3,
-  "quotes_removed": 0,
-  "tokens": 14155,
-  "latency_s": 27.5,
+  "forbidden_words_ok": true,
+  "forbidden_words": [],
+  "rulings_cited": 1,
+  "quotes_removed": 1,
+  "tokens": 12459,
+  "latency_s": 21.9,
   "facts": {
    "eps": null,
    "problem_type": "authorization_delayed",
    "service_requested": "silla de ruedas",
-   "events_summary": "La silla de ruedas actual está rota; el fisiatra formuló una nueva hace dos meses, pero la EPS la negó por no estar en el plan de beneficios, impidiendo que el usuario salga de su casa.",
-   "relevant_dates": [],
+   "events_summary": "El fisiatra formuló una nueva silla de ruedas hace dos meses; la EPS la negó por no estar en el plan de beneficios, dejando al usuario sin movilidad.",
+   "relevant_dates": [
+    "hace dos meses"
+   ],
    "urgent_health_risk": true,
    "special_protection": true,
    "special_protection_group": "disability",
@@ -184,12 +184,12 @@
     "fecha exacta de la formulación de la silla",
     "fecha exacta de la denegación por parte de la EPS",
     "nombre de la EPS",
-    "identificación del usuario (para verificar discapacidad)",
-    "detalle del plan de beneficios que la EPS menciona como excluyente"
+    "si existe orden médica formal",
+    "si se ha intentado algún recurso administrativo previo"
    ]
   },
   "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (persona con discapacidad) y la demora pone en riesgo inminente la salud o la vida del paciente.",
-  "passed": false
+  "passed": true
  },
  {
   "id": "06_dialisis_interrumpida",

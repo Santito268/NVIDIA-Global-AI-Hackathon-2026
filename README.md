@@ -132,9 +132,9 @@ model (`evals/checks.py`). Each case must choose the right document, detect who 
 whether there is special protection, cite only laws from the legal code, contain no unverified
 URL and no forbidden content (e.g. asking for court costs).
 
-**Latest live run: 11/12 cases pass every rule, and 9/12 documents cite at least one
-Constitutional Court ruling. Average 12,106 tokens and 21 s of model time per case.** The quote
-filter removed 8 quotes that were not exact copies. Full table: [`evals/results.md`](evals/results.md).
+**Latest live run: 12/12 cases pass every rule, and 9/12 documents cite at least one
+Constitutional Court ruling. Average 11,964 tokens and 21 s of model time per case.** The quote
+filter removed 9 quotes that were not exact copies. Full table: [`evals/results.md`](evals/results.md).
 
 Each failure became a rule enforced by code, with a test:
 
@@ -144,8 +144,8 @@ Each failure became a rule enforced by code, with a test:
   letters ("prestacin"), so correct quotes never matched. Quotes are now compared ignoring them.
 - Nano once said the writer was the patient while naming the writer's relationship ("hija"); code
   now settles that contradiction.
-- In the latest run, case 05 copied a private "Uso:" note of the legal code into the document.
-  Code now strips those notes from every draft (fixed after the run).
+- Case 05 once copied a private "Uso:" note of the legal code into the document. Code now strips
+  those notes from every draft; case 05 was re-run live and passes.
 
 Reproduce it (spends ~13k tokens per case; Tavily results are cached in `evals/tavily_cache.json`):
 
