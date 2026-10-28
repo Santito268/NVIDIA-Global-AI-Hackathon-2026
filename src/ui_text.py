@@ -83,6 +83,10 @@ UI_TEXT: dict[str, dict[str, str]] = {
             "Parece que escribiste en inglés. Para escribir tu caso en inglés, cambia la página "
             "a English (arriba a la derecha); si no, escríbelo en español."
         ),
+        "error_not_text": (
+            "Escribe tu caso con tus propias palabras, como se lo contarías a alguien: qué "
+            "necesitas, qué hizo la EPS y desde cuándo."
+        ),
         "error_off_topic": (
             "Subvenio solo ayuda con problemas de salud con tu EPS (medicamentos, citas, "
             "cirugías, autorizaciones…). Cuéntanos qué pasó con tu EPS."
@@ -204,6 +208,10 @@ UI_TEXT: dict[str, dict[str, str]] = {
         "error_wrong_language": (
             "Your text seems to be in English. To write your case in English, switch the page "
             "to English (top right)."
+        ),
+        "error_not_text": (
+            "Write your case in your own words, as you would tell someone: what you need, what "
+            "the EPS did and since when."
         ),
         "error_off_topic": (
             "Subvenio only helps with health problems with your EPS (medicines, appointments, "

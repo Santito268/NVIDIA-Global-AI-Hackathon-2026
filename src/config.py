@@ -41,6 +41,15 @@ MAX_INPUT_CHARS: int = 2000
 # A real case needs a few words ("La EPS no me entrega la insulina"). Shorter texts ("hola",
 # "test") are rejected by code, before any model call, so they cost nothing.
 MIN_INPUT_WORDS: int = 5
+# Emojis and symbols cost many tokens each: 5 words plus 1,600 emojis cost Nano 7,218 tokens in
+# an attack test (a normal case: ~900). At least this share of the visible characters must be
+# letters; a real description is ~80% letters.
+MIN_LETTER_SHARE: float = 0.6
+# A faithful translation of a 2,000-character case fits easily. An injected "write a long
+# story" filled 1,500 tokens in an attack test before this limit.
+TRANSLATE_INPUT_MAX_TOKENS: int = 900
+# The EPS name goes into the fixed parts of the document: only a short, plain name is kept.
+MAX_EPS_NAME_CHARS: int = 60
 # Interface languages. The pipeline always works in Spanish (SOURCE_LANGUAGE); results are
 # translated by Nano only when another language is chosen. To add one: a line here plus its
 # texts in src/ui_text.py.

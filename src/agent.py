@@ -23,6 +23,12 @@ ENGLISH_WORDS = frozenset(
     "doesn't didn't won't can't this that but on at an from their them since months weeks "
     "days ago years old".split()
 )
+# Only names with "_" ("events_summary"…): the field "eps" is a word every real case uses.
+FACT_FIELD_PATTERN = re.compile(
+    "|".join(name for name in CaseFacts.model_fields if "_" in name), re.IGNORECASE
+)
+# A plain EPS name: letters, digits, spaces and a little punctuation ("Nueva EPS", "Sura S.A.").
+EPS_NAME_PATTERN = re.compile(r"[\w][\w .,&'-]*")
 SPANISH_WORDS = frozenset(
     "el la los las de del que y en un una por para con mi su sus es está tiene ha han hace "
     "pero ya porque desde meses semanas días años le les lo al".split()
@@ -158,6 +164,13 @@ def validate_input(text: str, lang: str = config.SOURCE_LANGUAGE) -> str:
         )
     if len(text.split()) < config.MIN_INPUT_WORDS:
         raise LLMError("Please describe what happened in a few sentences.", "too_short")
+    visible = [c for c in text if not c.isspace()]
+    if sum(c.isalpha() for c in visible) < config.MIN_LETTER_SHARE * len(visible):
+        raise LLMError("Please describe your case in words.", "not_text")
+    if FACT_FIELD_PATTERN.search(text):
+        # The user wrote the intake's own field names, e.g. a fake JSON with
+        # "is_eps_health_case": true. In an attack test that fooled Nano, so code stops it.
+        raise LLMError("Please describe your case in your own words.", "not_text")
     if detect_language(text) == "en" and lang != "en":
         raise LLMError("The text is in English but the page is in Spanish.", "wrong_language")
     return text
@@ -175,7 +188,21 @@ def run_intake(description: str) -> tuple[CaseFacts, list[CallMetrics]]:
     # prompt's own rule, so code settles the contradiction.
     if facts.writer_relationship and facts.writer_is_affected_person:
         facts = facts.model_copy(update={"writer_is_affected_person": False})
-    return facts, metrics
+    return facts.model_copy(update={"eps": clean_eps_name(facts.eps)}), metrics
+
+
+def clean_eps_name(name: str | None) -> str | None:
+    """The EPS name if it is short and plain, else None (the document then shows a blank).
+
+    It is copied into the fixed parts of the document, so text such as
+    "<img src=x onerror=...>" or a Markdown link must never get there.
+    """
+    if not name:
+        return None
+    name = " ".join(name.split())
+    if len(name) > config.MAX_EPS_NAME_CHARS or not EPS_NAME_PATTERN.fullmatch(name):
+        return None
+    return name
 
 
 def route_case(facts: CaseFacts) -> RouteDecision:

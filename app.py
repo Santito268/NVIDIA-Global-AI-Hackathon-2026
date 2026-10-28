@@ -29,7 +29,7 @@ STEPS = [
     ("explain", "Nemotron Nano"),
 ]
 # Errors caused by the text the user wrote: shown as a notice, not as a service failure.
-INPUT_ERRORS = {"too_long", "too_short", "wrong_language", "off_topic"}
+INPUT_ERRORS = {"too_long", "too_short", "not_text", "wrong_language", "off_topic"}
 
 
 def language() -> str:

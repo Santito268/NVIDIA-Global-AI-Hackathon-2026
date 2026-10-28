@@ -19,6 +19,10 @@ PLACEHOLDER_PATTERN = re.compile(r"\[[A-ZÁÉÍÓÚÑ ]+\]")
 # The legal code's private "Uso:" guidance (src/legal.py) leaked into a draft in eval case 05,
 # inline "(Uso: ...)" or as its own line. The prompt forbids it; code makes sure.
 USE_NOTE_PATTERN = re.compile(r"[ \t]*\(Uso:[^)]*\)|^[ \t]*-?[ \t]*Uso:.*\n?", re.MULTILINE)
+# Markup a legal document never needs (see remove_markup).
+HTML_TAG_PATTERN = re.compile(r"</?[a-zA-Z][^>]*>")
+MARKDOWN_IMAGE_PATTERN = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+UNSAFE_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\((?!https?://)[^)]*\)")
 
 
 def remove_unverified_urls(text: str, sources: list[Source]) -> tuple[str, list[str]]:
@@ -83,9 +87,21 @@ def drop_items_with_removed_quotes(text: str) -> str:
     return "\n".join(line for block in kept for line in block)
 
 
+def remove_markup(text: str) -> str:
+    """Remove HTML tags, Markdown images and links that are not http(s) from the model's text.
+
+    A legal document needs none of them. The page escapes HTML anyway, but the downloaded .md
+    file may be opened in an editor that runs it, so code removes them first.
+    """
+    text = MARKDOWN_IMAGE_PATTERN.sub("", text)
+    text = UNSAFE_LINK_PATTERN.sub(r"\1", text)  # keep the link's words, drop its target
+    return HTML_TAG_PATTERN.sub("", text)
+
+
 def check_section(text: str, sources: list[Source]) -> tuple[str, list[str], int]:
     """All the checks for one section of the draft: clean text, URLs kept, quotes removed."""
-    text = remove_unverified_quotes(USE_NOTE_PATTERN.sub("", text), sources)
+    text = remove_markup(USE_NOTE_PATTERN.sub("", text))
+    text = remove_unverified_quotes(text, sources)
     removed = text.count(REMOVED_QUOTE_NOTE)  # measured by the evaluation set
     text, urls = remove_unverified_urls(drop_items_with_removed_quotes(text), sources)
     return text, urls, removed

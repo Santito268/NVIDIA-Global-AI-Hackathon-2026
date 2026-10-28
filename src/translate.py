@@ -78,9 +78,19 @@ def run_translate_input(text: str, language: str) -> tuple[str, list[CallMetrics
         {"role": "system", "content": prompts.TRANSLATE_INPUT_SYSTEM.format(language=language)},
         {"role": "user", "content": text},
     ]
-    translation, metrics = chat(messages, config.NANO_MODEL, "translate_input", thinking=False)
+    translation, metrics = chat(
+        messages,
+        config.NANO_MODEL,
+        "translate_input",
+        thinking=False,
+        max_tokens=config.TRANSLATE_INPUT_MAX_TOKENS,
+    )
     if not translation:
-        raise LLMError("The translation of your case came back empty.", "invalid")
+        raise LLMError("The translation of your case came back empty.", "invalid", [metrics])
+    if len(translation) > 2 * len(text) + 100:
+        # A translation is about as long as its original. A much longer one means the text
+        # made Nano write something else (an attack test got a dragon story): stop here.
+        raise LLMError("The text is not a description of a case.", "off_topic", [metrics])
     return translation, [metrics]
 
 

@@ -303,6 +303,6 @@ def test_off_topic_text_shows_a_notice_and_no_document(monkeypatch):
 
 
 def test_every_error_code_has_a_text_in_every_language():
-    codes = {"empty", "too_long", "too_short", "wrong_language", "off_topic", "invalid"}
+    codes = {"empty", "too_long", "too_short", "not_text", "wrong_language", "off_topic"}
     for lang in config.LANGUAGES:
         assert all(UI_TEXT[lang][f"error_{code}"] for code in codes)
