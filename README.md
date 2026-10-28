@@ -30,10 +30,12 @@ chatbots invent laws and court rulings, which is dangerous in a legal document.
 
 ## The solution
 
-The citizen describes what happened in their own words. The app:
+The citizen describes what happened in their own words (in Spanish, or in English on the
+English page). The app:
 
-1. Extracts the facts of the case (who is affected, how urgent it is, whether the patient is a
+1. Checks the text and extracts the facts of the case (who is affected, how urgent it is, whether the patient is a
    subject of special constitutional protection, whether someone writes on their behalf).
+   Texts that are not a health problem with an EPS stop here (see below).
 2. Chooses the right document with a fixed legal rule.
 3. Searches official government sites for Constitutional Court rulings.
 4. Writes the document, citing **only** verified laws and quotes that appear word for word in
@@ -67,6 +69,7 @@ reasons; the code handles everything that must be exact"**:
 | Invented URLs | Any URL that did not come from the search or the legal code is replaced. |
 | Wrong parties, oath or annexes | Title, parties (including *agencia oficiosa*, when someone files for a patient who cannot), annexes, oath, notifications and signature are built by code, with blanks like `[NOMBRE]`. The model writes only the facts, rights, requests and legal grounds. |
 | Wrong deadlines | "What to do next" is hand-written from the legal code, never generated. |
+| Spending credits on junk text | Code rejects texts under 5 words, over 2,000 characters, or in English on the Spanish page, before any model call. Nano's intake (a call that runs anyway) decides whether the text is a health problem with an EPS; if not, the case stops there (~800 tokens) with no Super call and no search. Every case also counts toward 3 per session and 50 per day. |
 | Wrong document type | Tutela vs. petition is a fixed rule over the extracted facts (urgent risk or special protection), not a model guess. |
 | Broken translation | Blanks, URLs, quotes and the title are replaced by tokens (`⟦1⟧`, `⟦2⟧`…) before translating and restored afterwards; if any token is lost, the Spanish version is shown. |
 
@@ -76,7 +79,8 @@ Each step uses the smallest model that does the job well:
 
 | Step | Model | Why |
 |---|---|---|
-| 1. Intake: extract the facts as JSON | **Nemotron 3 Nano** (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`), reasoning off | Fast, cheap structured extraction; turning reasoning off cut tokens ~5x with the same result. |
+| 0. Only for a case written in English: translate it into Spanish | **Nemotron 3 Nano**, reasoning off | The rest of the pipeline and the document work in Spanish, the language of Colombian courts. The language is detected by code (common words), not by a model. |
+| 1. Intake: decide if it is an EPS case, extract the facts as JSON | **Nemotron 3 Nano** (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`), reasoning off | Fast, cheap structured extraction; turning reasoning off cut tokens ~5x with the same result. |
 | 2. Route: tutela or petition | Code | A fixed legal rule; a model call flipped its answer between runs in our evaluation. |
 | 3. Research: propose up to 3 search queries | **Nemotron 3 Super** (`nvidia/nemotron-3-super-120b-a12b`), reasoning off | Needs legal vocabulary to search well. Our code runs the searches. |
 | 4. Draft: write the reasoning sections | **Nemotron 3 Super**, reasoning **on** | The hardest step: apply the right articles and rulings to the facts. |
@@ -126,15 +130,21 @@ Code map: `app.py` (interface) · `src/ui_text.py` (hand-written Spanish and Eng
 
 ## Metrics and evaluation
 
-An evaluation set of **12 invented cases** (6 tutelas, 6 petitions, including tricky ones such
-as a non-urgent case written on behalf of a relative) is graded by plain code, not by another
+An evaluation set of **16 invented cases** (7 tutelas, 7 petitions and 2 texts that must be
+stopped, including tricky ones such as a non-urgent case written on behalf of a relative, an
+"other" problem (a transfer between EPS), a case written in English, and an attempt to override
+the instructions) is graded by plain code, not by another
 model (`evals/checks.py`). Each case must choose the right document, detect who writes and
 whether there is special protection, cite only laws from the legal code, contain no unverified
-URL and no forbidden content (e.g. asking for court costs).
+URL and no forbidden content (e.g. asking for court costs). The off-topic texts pass only if they
+are stopped.
 
-**Latest live run: 12/12 cases pass every rule, and 9/12 documents cite at least one
-Constitutional Court ruling. Average 11,964 tokens and 21 s of model time per case.** The quote
-filter removed 9 quotes that were not exact copies. Full table: [`evals/results.md`](evals/results.md).
+**Latest live results: 16/16 cases pass every rule, and 11/14 documents cite at least one
+Constitutional Court ruling. Average 12,106 tokens and 24 s of model time per document; the two
+off-topic texts were stopped after the intake with ~814 tokens each.** The quote filter removed 9
+quotes that were not exact copies. Cases 01–12 were last run in full before the off-topic check
+was added to the intake; their intake was re-run live afterwards and still extracts the expected
+facts. Full table: [`evals/results.md`](evals/results.md).
 
 Each failure became a rule enforced by code, with a test:
 
@@ -144,6 +154,8 @@ Each failure became a rule enforced by code, with a test:
   letters ("prestacin"), so correct quotes never matched. Quotes are now compared ignoring them.
 - Nano once said the writer was the patient while naming the writer's relationship ("hija"); code
   now settles that contradiction.
+- The English case first marked the wife as the writer ("I am writing for my wife"): the intake
+  prompt only gave parents and children as examples. Spouses and siblings were added.
 - Case 05 once copied a private "Uso:" note of the legal code into the document. Code now strips
   those notes from every draft; case 05 was re-run live and passes.
 
@@ -196,16 +208,22 @@ To deploy on Streamlit Community Cloud, add the same four values as TOML secrets
 - **Ruling quotes are verified as text, not as holdings.** A quote is copied word for word from
   a search snippet, but the snippet may come from the facts of that case or a lower-court stage
   rather than the Court's decision. The Sources tab shows every snippet so it can be checked.
-- **3/12 documents still cite no ruling.** They rely only on the verified laws. Next: a small
+- **3/14 documents still cite no ruling.** They rely only on the verified laws. Next: a small
   verified set of key health rulings, like the legal code.
 - **The document type depends on two facts extracted by Nano** (urgent risk, special
-  protection). The evaluation set is small (12 cases); more cases are needed.
+  protection). The evaluation set is small (16 cases); more cases are needed.
 - **Privacy:** the citizen's text is sent to Nebius. The page asks not to type names, ID numbers
   or addresses, and the document uses blanks for them, but the code does not scrub personal data.
 - **Demo limits:** 3 cases per session and 50 per day for the whole app, to protect credits.
   Reloading resets the session limit; restarting the server resets the daily one.
 - **The look depends on Streamlit internals.** The custom CSS targets some of Streamlit's
   internal element names, so Streamlit is pinned (1.66.1); upgrading it needs a visual check.
+- **The off-topic check is a model decision.** It was tested on two texts (a recipe and an
+  attempt to override the instructions). A text that pretends to be an EPS case still goes
+  through, but the code still controls the document type, the fixed parts, the quotes and the
+  URLs, and the usage limits cap the cost.
+- **Language detection counts common words.** A very short or mixed text may be taken as
+  Spanish; the intake still writes the facts in Spanish.
 - **English is a reference translation** by Nano; Spanish legal terms are not always kept.
 - **Scope:** health insurers (EPS) only, two document types, and a 30-article legal code.
   Next: more legal areas (pensions, labor), a PDF/Word download, and a filing guide per city.

@@ -456,5 +456,94 @@
   },
   "route_reason": "Procede el derecho de petición porque no hay un riesgo inminente para la salud: primero se le pide a la EPS una respuesta formal y de fondo.",
   "passed": true
+ },
+ {
+  "id": "13_traslado_eps_otro",
+  "problem_type_ok": true,
+  "document_type": "derecho_de_peticion",
+  "document_type_ok": true,
+  "writer_ok": true,
+  "special_protection_ok": true,
+  "norms_ok": true,
+  "unknown_norms": [],
+  "urls_ok": true,
+  "forbidden_words_ok": true,
+  "forbidden_words": [],
+  "rulings_cited": 1,
+  "quotes_removed": 0,
+  "tokens": 13095,
+  "latency_s": 68.1,
+  "facts": {
+   "is_eps_health_case": true,
+   "eps": null,
+   "problem_type": "other",
+   "service_requested": null,
+   "events_summary": "Solicitud escrita de traslado a otra EPS hace dos meses sin respuesta.",
+   "relevant_dates": [],
+   "urgent_health_risk": false,
+   "special_protection": false,
+   "special_protection_group": null,
+   "writer_is_affected_person": true,
+   "writer_relationship": null,
+   "missing_info": [
+    "fecha exacta de la solicitud escrita",
+    "detalle de la respuesta solicitada",
+    "nombre de la EPS"
+   ]
+  },
+  "route_reason": "Procede el derecho de petición porque no hay un riesgo inminente para la salud: primero se le pide a la EPS una respuesta formal y de fondo.",
+  "passed": true
+ },
+ {
+  "id": "14_ecografia_embarazo_ingles",
+  "document_type": "tutela",
+  "document_type_ok": true,
+  "writer_ok": true,
+  "special_protection_ok": true,
+  "norms_ok": true,
+  "unknown_norms": [],
+  "urls_ok": true,
+  "forbidden_words_ok": true,
+  "forbidden_words": [],
+  "rulings_cited": 2,
+  "quotes_removed": 0,
+  "tokens": 12819,
+  "latency_s": 21.7,
+  "facts": {
+   "is_eps_health_case": true,
+   "eps": null,
+   "problem_type": "authorization_delayed",
+   "service_requested": "ecografía obstétrica",
+   "events_summary": "La EPS no ha autorizado una ecografía obstétrica solicitada por el médico hace tres semanas.",
+   "relevant_dates": [],
+   "urgent_health_risk": true,
+   "special_protection": true,
+   "special_protection_group": "pregnancy",
+   "writer_is_affected_person": false,
+   "writer_relationship": "esposa",
+   "missing_info": [
+    "fecha exacta de la solicitud",
+    "fecha de la orden médica",
+    "nombre completo de la EPS"
+   ]
+  },
+  "route_reason": "Procede la tutela porque el paciente es sujeto de especial protección constitucional (mujer embarazada) y la demora pone en riesgo inminente la salud o la vida del paciente.",
+  "passed": true
+ },
+ {
+  "id": "15_fuera_de_tema_receta",
+  "rejected": "off_topic",
+  "rejected_ok": true,
+  "passed": true,
+  "tokens": 811,
+  "latency_s": 0.6
+ },
+ {
+  "id": "16_fuera_de_tema_engano",
+  "rejected": "off_topic",
+  "rejected_ok": true,
+  "passed": true,
+  "tokens": 816,
+  "latency_s": 0.6
  }
 ]
