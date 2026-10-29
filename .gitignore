@@ -19,3 +19,8 @@ Thumbs.db
 
 # Local decision log (Spanish, not part of the submission)
 notas/
+
+# Local tooling for the AI coding assistant (kept on the author's machine only)
+CLAUDE.md
+.claude/
+skills-lock.json

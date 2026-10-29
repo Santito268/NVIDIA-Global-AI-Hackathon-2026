@@ -1,6 +1,6 @@
 """Attacks a visitor could try: spending tokens, breaking the page, reaching the keys.
 
-Mock mode: no network, no credits. The live version of these attacks is in bitácora D46.
+Mock mode: no network, no credits. The live results are summarized in the README.
 """
 
 import logging
